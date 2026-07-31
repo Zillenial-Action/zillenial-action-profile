@@ -569,21 +569,44 @@
             });
         })();
 
-        // Manual collapse fallback — ensures filter panels work even if
-        // Bootstrap's data-API did not auto-initialize.
+        // Manual modal fallback — ensures modal triggers work reliably
         (function () {
             document.addEventListener('click', function (e) {
-                const trigger = e.target.closest('[data-bs-toggle="collapse"]');
+                const trigger = e.target.closest('[data-bs-toggle="modal"], [data-toggle="modal"]');
                 if (!trigger) return;
-                const targetSel = trigger.getAttribute('data-bs-target') || trigger.getAttribute('href');
+                const targetSel = trigger.getAttribute('data-bs-target') || trigger.getAttribute('data-target') || trigger.getAttribute('href');
                 if (!targetSel) return;
-                const panel = document.querySelector(targetSel);
-                if (!panel) return;
-                // If Bootstrap is loaded it will handle this; we only act as fallback
-                if (typeof bootstrap === 'undefined') {
-                    e.preventDefault();
-                    panel.classList.toggle('show');
-                    trigger.setAttribute('aria-expanded', panel.classList.contains('show') ? 'true' : 'false');
+                const modal = document.querySelector(targetSel);
+                if (!modal) return;
+
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
+                    modalInstance.show();
+                } else {
+                    modal.classList.add('show');
+                    modal.style.display = 'block';
+                    document.body.classList.add('modal-open');
+                }
+            });
+
+            document.addEventListener('click', function (e) {
+                const dismissBtn = e.target.closest('[data-bs-dismiss="modal"], [data-dismiss="modal"]');
+                if (!dismissBtn) return;
+                const modal = dismissBtn.closest('.modal');
+                if (!modal) return;
+
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    if (modalInstance) modalInstance.hide();
+                    else {
+                        modal.classList.remove('show');
+                        modal.style.display = 'none';
+                        document.body.classList.remove('modal-open');
+                    }
+                } else {
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
                 }
             });
         })();

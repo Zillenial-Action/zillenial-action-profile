@@ -48,7 +48,6 @@ class KodeVoucher extends Model
         'kode',
         'nilai_diskon',
         'kuota',
-        'digunakan',
         'tanggal_kadaluarsa',
         'status',
         'is_external',

@@ -68,6 +68,16 @@ class CheckoutService
                     if ($remaining < $jumlahTiket) {
                         throw new \Exception("Kuota voucher tidak mencukupi. Tersisa {$remaining} kuota, dibutuhkan {$jumlahTiket}.");
                     }
+
+                    $emailUtama = $pengunjung[0]['email'];
+                    $sudahDipakai = Transaksi::where('id_voucher', $appliedVoucher->id)
+                        ->where('email', $emailUtama)
+                        ->whereIn('status_pembayaran', ['Pending', 'Success'])
+                        ->exists();
+                    if ($sudahDipakai) {
+                        throw new \Exception('Voucher ini sudah pernah digunakan oleh email ' . $emailUtama . '.');
+                    }
+
                     $voucherId         = $appliedVoucher->id;
                     $discountPerTicket = $appliedVoucher->nilai_diskon;
                     $appliedVoucher->increment('digunakan', $jumlahTiket);

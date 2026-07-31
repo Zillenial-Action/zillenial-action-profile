@@ -48,14 +48,14 @@ class MidtransService
             ],
             'item_details' => [
                 [
-                    'id' => 'TIKET-'.$transaksi->id_event,
-                    'price' => (int) ($transaksi->total_pembayaran / $transaksi->jumlah_tiket),
-                    'quantity' => (int) $transaksi->jumlah_tiket,
-                    'name' => 'Tiket '.($transaksi->event?->name ?? 'Event'),
+                    'id'       => 'TIKET-'.$transaksi->id_event,
+                    'price'    => (int) $transaksi->total_pembayaran,
+                    'quantity' => 1,
+                    'name'     => 'Tiket '.($transaksi->event?->name ?? 'Event').' ('.$transaksi->jumlah_tiket.' tiket)',
                 ],
             ],
             'callbacks' => [
-                'finish' => rtrim(env('FRONTEND_URL', url('/')), '/') . '/payment/success?order_id=' . $transaksi->invoice,
+                'finish' => rtrim(config('midtrans.frontend_url', url('/')), '/') . '/payment/success?order_id=' . $transaksi->invoice,
             ],
         ];
 
@@ -234,7 +234,7 @@ class MidtransService
             return 'Success';
         }
 
-        if (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
+        if (in_array($transactionStatus, ['cancel', 'deny', 'expire', 'failure'])) {
             return 'Failed';
         }
 

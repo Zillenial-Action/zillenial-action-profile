@@ -33,4 +33,6 @@ return [
         ? 'https://app.midtrans.com/snap/snap.js'
         : 'https://app.sandbox.midtrans.com/snap/snap.js',
 
+    'frontend_url' => env('FRONTEND_URL', ''),
+
 ];

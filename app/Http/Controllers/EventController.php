@@ -189,24 +189,30 @@ class EventController extends Controller
     public function destroy(Event $event): RedirectResponse
     {
         try {
-            $eventId = $event->id;
+            $pendingCount = $event->transaksis()->where('status_pembayaran', 'Pending')->count();
+            if ($pendingCount > 0) {
+                return redirect()->route('event.index')
+                    ->with('error', "Event tidak bisa dihapus: ada {$pendingCount} transaksi Pending yang masih aktif.");
+            }
+
+            $eventId   = $event->id;
             $eventName = $event->name;
-            
+
             $event->delete();
             Cache::forget('homepage_events');
-            
+
             Log::info('Event soft deleted', [
-                'event_id' => $eventId,
+                'event_id'   => $eventId,
                 'event_name' => $eventName,
-                'user_id' => auth()->id(),
+                'user_id'    => auth()->id(),
             ]);
-            
+
             return redirect()->route('event.index')->with('success', 'Event berhasil dihapus');
         } catch (\Exception $e) {
             Log::error('Error deleting event', [
                 'event_id' => $event->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'error'    => $e->getMessage(),
+                'user_id'  => auth()->id(),
             ]);
             return redirect()->route('event.index')->with('error', 'Gagal menghapus event');
         }

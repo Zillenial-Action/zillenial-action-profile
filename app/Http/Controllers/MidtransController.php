@@ -45,6 +45,13 @@ class MidtransController extends Controller
             return redirect('/')->with('error', 'Transaksi tidak ditemukan.');
         }
 
+        if (! empty($transaksi->public_token)) {
+            $token = request()->query('token', '');
+            if (! hash_equals($transaksi->public_token, (string) $token)) {
+                abort(403);
+            }
+        }
+
         return view('portal.payment-success', ['data' => $transaksi]);
     }
 

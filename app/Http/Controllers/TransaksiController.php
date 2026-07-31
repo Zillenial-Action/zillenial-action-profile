@@ -80,39 +80,48 @@ class TransaksiController extends Controller
         try {
             $validated = $request->validated();
 
-            $event = Event::findOrFail($validated['id_event']);
+            $invoice = date('YmdHis') . uniqid();
 
-            $lastTransaksi = Transaksi::orderByDesc('id')->first();
-            $invoice = date('Ymd') . (($lastTransaksi?->id ?? 0) + 1);
+            DB::transaction(function () use ($validated, $invoice) {
+                $affected = Event::where('id', $validated['id_event'])
+                    ->where('status', true)
+                    ->where('jumlah_tiket', '>=', $validated['jumlah_tiket'])
+                    ->decrement('jumlah_tiket', $validated['jumlah_tiket']);
 
-            Transaksi::create([
-                'id_event' => $validated['id_event'],
-                'invoice' => $invoice,
-                'jumlah_tiket' => $validated['jumlah_tiket'],
-                'total_pembayaran' => $validated['jumlah_tiket'] * $event->harga,
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'telepon' => $validated['telepon'],
-                'status_pembayaran' => 'Pending',
-                'tanggal_register' => now(),
-                'tanggal_pembayaran' => null,
-                'id_payment' => $validated['id_payment'],
-            ]);
+                if ($affected === 0) {
+                    throw new \Exception('Stok tiket tidak mencukupi atau event tidak aktif.');
+                }
+
+                $event = Event::findOrFail($validated['id_event']);
+
+                Transaksi::create([
+                    'id_event'           => $validated['id_event'],
+                    'invoice'            => $invoice,
+                    'jumlah_tiket'       => $validated['jumlah_tiket'],
+                    'total_pembayaran'   => $validated['jumlah_tiket'] * $event->harga,
+                    'name'               => $validated['name'],
+                    'email'              => $validated['email'],
+                    'telepon'            => $validated['telepon'],
+                    'status_pembayaran'  => 'Pending',
+                    'tanggal_register'   => now(),
+                    'tanggal_pembayaran' => null,
+                    'id_payment'         => $validated['id_payment'],
+                ]);
+            });
 
             Log::info('Transaction created via admin', [
-                'invoice' => $invoice,
+                'invoice'  => $invoice,
                 'event_id' => $validated['id_event'],
-                'total' => $validated['jumlah_tiket'] * $event->harga,
-                'user_id' => auth()->id(),
+                'user_id'  => auth()->id(),
             ]);
 
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil ditambahkan');
         } catch (\Exception $e) {
             Log::error('Error creating transaction', [
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
                 'user_id' => auth()->id(),
             ]);
-            return redirect()->route('transaksi.create')->with('error', 'Gagal menambahkan transaksi');
+            return redirect()->route('transaksi.create')->with('error', 'Gagal menambahkan transaksi: ' . $e->getMessage());
         }
     }
 
@@ -182,20 +191,21 @@ class TransaksiController extends Controller
     public function destroy(Transaksi $transaksi): RedirectResponse
     {
         try {
-            // Return tickets to event
-            if ($transaksi->event) {
-                $transaksi->event->increment('jumlah_tiket', $transaksi->jumlah_tiket);
-            }
-
             $transaksiId = $transaksi->id;
-            $invoice = $transaksi->invoice;
-            
-            $transaksi->delete();
+            $invoice     = $transaksi->invoice;
+
+            DB::transaction(function () use ($transaksi) {
+                if ($transaksi->id_event) {
+                    Event::where('id', $transaksi->id_event)
+                        ->increment('jumlah_tiket', $transaksi->jumlah_tiket);
+                }
+                $transaksi->delete();
+            });
 
             Log::info('Transaction soft deleted', [
                 'transaksi_id' => $transaksiId,
-                'invoice' => $invoice,
-                'user_id' => auth()->id(),
+                'invoice'      => $invoice,
+                'user_id'      => auth()->id(),
             ]);
 
             return redirect()->route('transaksi.index')->with('success', 'Transaksi berhasil dihapus');
@@ -214,17 +224,18 @@ class TransaksiController extends Controller
         try {
             $transaksi = Transaksi::onlyTrashed()->findOrFail($id);
 
-            // Deduct tickets from event when restoring
-            if ($transaksi->event) {
-                $transaksi->event->decrement('jumlah_tiket', $transaksi->jumlah_tiket);
-            }
-
-            $transaksi->restore();
+            DB::transaction(function () use ($transaksi) {
+                if ($transaksi->id_event) {
+                    Event::where('id', $transaksi->id_event)
+                        ->decrement('jumlah_tiket', $transaksi->jumlah_tiket);
+                }
+                $transaksi->restore();
+            });
 
             Log::info('Transaction restored', [
                 'transaksi_id' => $transaksi->id,
-                'invoice' => $transaksi->invoice,
-                'user_id' => auth()->id(),
+                'invoice'      => $transaksi->invoice,
+                'user_id'      => auth()->id(),
             ]);
 
             return redirect()->route('transaksi.trashed')->with('success', 'Transaksi berhasil dipulihkan');
@@ -389,139 +400,103 @@ class TransaksiController extends Controller
         $oldStatus = $transaksi->status_pembayaran;
 
         if ($newStatus === 'Success') {
-            // Check if there are volunteers to send emails to
             if ($transaksi->volunteers->isEmpty()) {
                 return response()->json(['message' => 'Tidak ada volunteer yang terdaftar untuk transaksi ini!'], 400);
             }
 
-            $failedEmails = [];
-            $sentEmails = [];
-
-            // Use database transaction to ensure atomicity
-            DB::beginTransaction();
-
             try {
-                // Attempt to send email to all volunteers
-                foreach ($transaksi->volunteers as $volunteer) {
-                    try {
-                        Mail::to($volunteer->email)->send(
-                            new SendTicket($transaksi->invoice, $this->ticketUrl($transaksi))
-                        );
-                        
-                        $sentEmails[] = $volunteer->email;
-                        
-                        Log::info('Ticket email sent', [
-                            'invoice' => $transaksi->invoice,
-                            'volunteer_email' => $volunteer->email,
-                            'user_id' => auth()->id(),
-                        ]);
-                    } catch (\Exception $emailException) {
-                        $failedEmails[] = $volunteer->email;
-                        
-                        Log::error('Failed to send ticket email', [
-                            'invoice' => $transaksi->invoice,
-                            'volunteer_email' => $volunteer->email,
-                            'error' => $emailException->getMessage(),
-                            'user_id' => auth()->id(),
-                        ]);
-                    }
-                }
+                DB::transaction(function () use ($transaksi, $oldStatus) {
+                    $fresh = Transaksi::where('id', $transaksi->id)
+                        ->lockForUpdate()
+                        ->first();
 
-                // If any email failed, rollback and return error
-                if (!empty($failedEmails)) {
-                    DB::rollBack();
-                    
-                    Log::warning('Transaction status update aborted due to email failures', [
-                        'transaksi_id' => $transaksi->id,
-                        'invoice' => $transaksi->invoice,
-                        'failed_emails' => $failedEmails,
-                        'sent_emails' => $sentEmails,
-                        'user_id' => auth()->id(),
+                    if (! $fresh || $fresh->status_pembayaran === 'Success') {
+                        return;
+                    }
+
+                    $fresh->update([
+                        'status_pembayaran'  => 'Success',
+                        'tanggal_pembayaran' => now(),
                     ]);
 
-                    return response()->json([
-                        'message' => 'Gagal mengirim email ke: ' . implode(', ', $failedEmails) . '. Status pembayaran tidak diperbarui.',
-                        'failed_emails' => $failedEmails,
-                        'sent_emails' => $sentEmails,
-                    ], 500);
-                }
-
-                // All emails sent successfully, now update status
-                $transaksi->update([
-                    'status_pembayaran' => 'Success',
-                    'tanggal_pembayaran' => now(),
-                ]);
-
-                // Re-deduct tickets if status changed FROM Failed to Success
-                if ($oldStatus === 'Failed') {
-                    if ($transaksi->event) {
-                        $transaksi->event->decrement('jumlah_tiket', $transaksi->jumlah_tiket);
+                    if ($oldStatus === 'Failed') {
+                        Event::where('id', $fresh->id_event)
+                            ->lockForUpdate()
+                            ->decrement('jumlah_tiket', $fresh->jumlah_tiket);
                     }
-                }
-
-                DB::commit();
-
-                Log::info('Transaction status updated to Success', [
+                });
+            } catch (\Exception $e) {
+                Log::error('Error updating transaction status', [
                     'transaksi_id' => $transaksi->id,
-                    'invoice' => $transaksi->invoice,
-                    'sent_emails' => $sentEmails,
-                    'user_id' => auth()->id(),
+                    'error'        => $e->getMessage(),
+                    'user_id'      => auth()->id(),
                 ]);
 
-                // Redeem external voucher via chatkebaikan API jika voucher berasal dari API eksternal
-                if ($transaksi->id_voucher) {
-                    $voucher = KodeVoucher::find($transaksi->id_voucher);
-                    if ($voucher && $voucher->is_external) {
-                        try {
-                            $cfg = config('services.chatkebaikan');
-                            $url = $cfg['redeem_url'] ?? '';
-                            if (empty($url)) {
-                                throw new \RuntimeException('Endpoint redeem voucher eksternal belum dikonfigurasi.');
-                            }
+                return response()->json(['message' => 'Terjadi kesalahan saat memproses transaksi.'], 500);
+            }
 
-                            $redeemResponse = Http::timeout($cfg['timeout'] ?? 10)
+            $sentEmails  = [];
+            $failedEmails = [];
+            $ticketUrl   = $this->ticketUrl($transaksi);
+
+            foreach ($transaksi->volunteers as $volunteer) {
+                try {
+                    Mail::to($volunteer->email)->queue(
+                        new SendTicket($transaksi->invoice, $ticketUrl)
+                    );
+                    $sentEmails[] = $volunteer->email;
+                } catch (\Throwable $emailException) {
+                    $failedEmails[] = $volunteer->email;
+                    Log::error('Gagal mengantri email tiket (updateStatus admin)', [
+                        'invoice'         => $transaksi->invoice,
+                        'volunteer_email' => $volunteer->email,
+                        'error'           => $emailException->getMessage(),
+                        'user_id'         => auth()->id(),
+                    ]);
+                }
+            }
+
+            if ($transaksi->id_voucher) {
+                $voucher = KodeVoucher::find($transaksi->id_voucher);
+                if ($voucher && $voucher->is_external) {
+                    try {
+                        $cfg = config('services.chatkebaikan');
+                        $url = $cfg['redeem_url'] ?? '';
+                        if (! empty($url)) {
+                            Http::timeout($cfg['timeout'] ?? 10)
                                 ->acceptJson()
                                 ->withOptions(['allow_redirects' => ['strict' => true]])
                                 ->send(strtoupper($cfg['redeem_method'] ?? 'POST'), $url, [
                                     'json' => ['kode' => $voucher->kode],
                                 ]);
-
-                            Log::info('External voucher redeem response', [
-                                'kode' => $voucher->kode,
-                                'status' => $redeemResponse->status(),
-                                'body' => $redeemResponse->json(),
-                                'invoice' => $transaksi->invoice,
-                            ]);
-                        } catch (\Exception $redeemException) {
-                            // Log tapi tidak gagalkan transaksi — pembayaran sudah dikonfirmasi
-                            Log::error('Failed to redeem external voucher', [
-                                'kode' => $voucher->kode,
-                                'invoice' => $transaksi->invoice,
-                                'error' => $redeemException->getMessage(),
-                            ]);
                         }
+                    } catch (\Exception $redeemException) {
+                        Log::error('Failed to redeem external voucher', [
+                            'kode'    => $voucher->kode,
+                            'invoice' => $transaksi->invoice,
+                            'error'   => $redeemException->getMessage(),
+                        ]);
                     }
                 }
-
-                return response()->json([
-                    'message' => 'Status berhasil diperbarui! Email terkirim ke ' . count($sentEmails) . ' volunteer.',
-                    'sent_emails' => $sentEmails,
-                    'tanggal_pembayaran' => now()->format('Y-m-d H:i:s'),
-                ]);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-
-                Log::error('Error updating transaction status', [
-                    'transaksi_id' => $transaksi->id,
-                    'error' => $e->getMessage(),
-                    'user_id' => auth()->id(),
-                ]);
-
-                return response()->json([
-                    'message' => 'Terjadi kesalahan saat memproses transaksi: ' . $e->getMessage(),
-                ], 500);
             }
+
+            Log::info('Transaction status updated to Success', [
+                'transaksi_id' => $transaksi->id,
+                'invoice'      => $transaksi->invoice,
+                'sent_emails'  => $sentEmails,
+                'user_id'      => auth()->id(),
+            ]);
+
+            $msg = 'Status berhasil diperbarui! Email diantri ke ' . count($sentEmails) . ' volunteer.';
+            if (! empty($failedEmails)) {
+                $msg .= ' Gagal antre: ' . implode(', ', $failedEmails) . '.';
+            }
+
+            return response()->json([
+                'message'           => $msg,
+                'sent_emails'       => $sentEmails,
+                'tanggal_pembayaran' => now()->format('Y-m-d H:i:s'),
+            ]);
         } else {
             // Update status to Pending or Failed
             try {

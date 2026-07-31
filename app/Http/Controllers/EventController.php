@@ -282,47 +282,14 @@ class EventController extends Controller
      */
     public function export(Request $request)
     {
-        $query = Event::query()
-            ->orderByDesc('created_at')
-            ->when($request->waktu_awal && $request->waktu_akhir, fn($q) => 
-                $q->whereDate('created_at', '>=', $request->waktu_awal)
-                  ->whereDate('created_at', '<=', $request->waktu_akhir)
-            )
-            ->when($request->waktu_awal && !$request->waktu_akhir, fn($q) => 
-                $q->whereDate('created_at', $request->waktu_awal)
-            )
-            ->when($request->mitra, fn($q) => 
-                $q->where('mitra', 'like', '%' . $request->mitra . '%')
-            )
-            ->when(isset($request->status), fn($q) => 
-                $q->where('status', $request->status)
-            );
-
-        $data = $query->get();
-
-        $formattedEvents = $data->map(fn($event) => [
-            'id' => $event->id,
-            'name' => $event->name,
-            'mitra' => $event->mitra,
-            'website' => $event->website,
-            'status' => $event->status ? 'Aktif' : 'Tidak Aktif',
-            'waktu_mulai' => $event->waktu_mulai->format('d-m-Y'),
-            'waktu_berakhir' => $event->waktu_berakhir->format('d-m-Y'),
-            'nama_tempat' => $event->nama_tempat,
-            'alamat' => $event->alamat,
-            'kota' => $event->kota,
-            'jumlah_tiket' => $event->jumlah_tiket,
-            'harga' => $event->harga,
-            'created_at' => $event->created_at->format('d-m-Y h:i A'),
-        ]);
+        $filters = $request->only(['waktu_awal', 'waktu_akhir', 'mitra', 'status']);
 
         Log::info('Event export requested', [
-            'total_records' => $formattedEvents->count(),
             'user_id' => auth()->id(),
-            'filters' => $request->only(['waktu_awal', 'waktu_akhir', 'mitra', 'status']),
+            'filters' => $filters,
         ]);
 
-        return Excel::download(new EventExport($formattedEvents), 'Event.xlsx');
+        return Excel::download(new EventExport($filters), 'Event.xlsx');
     }
 
     /**

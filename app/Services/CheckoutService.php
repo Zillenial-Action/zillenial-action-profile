@@ -29,130 +29,153 @@ class CheckoutService
         array $pengunjung,
         ?string $voucherCode = null
     ): Transaksi {
-        DB::beginTransaction();
+        if (! $payment->status || $payment->type !== 'midtrans') {
+            throw new \Exception('Metode pembayaran tidak tersedia.');
+        }
+
+        if (! $event->isActive()) {
+            throw new \Exception('Event sudah sold out.');
+        }
+
+        // ── Fase 1: Semua operasi DB dalam satu transaction pendek ────────────
+        $transaksi     = null;
+        $appliedVoucher = null;
 
         try {
-            if (! $payment->status || $payment->type !== 'midtrans') {
-                throw new \Exception('Metode pembayaran tidak tersedia.');
-            }
-
-            if (! $event->isActive()) {
-                throw new \Exception('Event sudah sold out.');
-            }
-
-            // 1. Potong stok secara atomik
-            $affected = Event::where('id', $event->id)
-                ->where('status', true)
-                ->where('jumlah_tiket', '>=', $jumlahTiket)
-                ->decrement('jumlah_tiket', $jumlahTiket);
-
-            if ($affected === 0) {
-                throw new \Exception('Tiket sudah sold out atau jumlah tiket tidak mencukupi.');
-            }
-
-            // 2. Proses voucher
-            $voucherId         = null;
-            $discountPerTicket = 0;
-            $appliedVoucher    = null;
-
-            if ($voucherCode) {
-                $appliedVoucher = KodeVoucher::where('kode', strtoupper(trim($voucherCode)))
-                    ->where('id_event', $event->id)
+            DB::transaction(function () use (
+                $event, $jumlahTiket, $payment, $pengunjung, $voucherCode,
+                &$transaksi, &$appliedVoucher
+            ) {
+                // 1. Potong stok secara atomik
+                $affected = Event::where('id', $event->id)
                     ->where('status', true)
-                    ->where('tanggal_kadaluarsa', '>=', now()->startOfDay())
-                    ->lockForUpdate()
-                    ->first();
+                    ->where('jumlah_tiket', '>=', $jumlahTiket)
+                    ->decrement('jumlah_tiket', $jumlahTiket);
 
-                if ($appliedVoucher) {
-                    $remaining = $appliedVoucher->kuota - $appliedVoucher->digunakan;
-                    if ($remaining < $jumlahTiket) {
-                        throw new \Exception("Kuota voucher tidak mencukupi. Tersisa {$remaining} kuota, dibutuhkan {$jumlahTiket}.");
-                    }
-
-                    $emailUtama = $pengunjung[0]['email'];
-                    $sudahDipakai = Transaksi::where('id_voucher', $appliedVoucher->id)
-                        ->where('email', $emailUtama)
-                        ->whereIn('status_pembayaran', ['Pending', 'Success'])
-                        ->exists();
-                    if ($sudahDipakai) {
-                        throw new \Exception('Voucher ini sudah pernah digunakan oleh email ' . $emailUtama . '.');
-                    }
-
-                    $voucherId         = $appliedVoucher->id;
-                    $discountPerTicket = $appliedVoucher->nilai_diskon;
-                    $appliedVoucher->increment('digunakan', $jumlahTiket);
+                if ($affected === 0) {
+                    throw new \Exception('Tiket sudah sold out atau jumlah tiket tidak mencukupi.');
                 }
-            }
 
-            // 3. Hitung total server-side
-            $totalPembayaran = max(0, ($event->harga - $discountPerTicket) * $jumlahTiket);
+                // 2. Proses voucher
+                $voucherId         = null;
+                $discountPerTicket = 0;
 
-            // 4. Buat transaksi
-            $invoice   = date('YmdHis') . uniqid();
-            $utamaData = $pengunjung[0];
+                if ($voucherCode) {
+                    $appliedVoucher = KodeVoucher::where('kode', strtoupper(trim($voucherCode)))
+                        ->where('id_event', $event->id)
+                        ->where('status', true)
+                        ->where('tanggal_kadaluarsa', '>=', now()->startOfDay())
+                        ->lockForUpdate()
+                        ->first();
 
-            $transaksi = Transaksi::create([
-                'id_event'           => $event->id,
-                'invoice'            => $invoice,
-                'jumlah_tiket'       => $jumlahTiket,
-                'total_pembayaran'   => $totalPembayaran,
-                'name'               => $utamaData['name'],
-                'telepon'            => $this->formatPhone($utamaData['telepon']),
-                'email'              => $utamaData['email'],
-                'status_pembayaran'  => 'Pending',
-                'tanggal_register'   => now(),
-                'tanggal_pembayaran' => null,
-                'id_payment'         => $payment->id,
-                'id_voucher'         => $voucherId,
-            ]);
+                    if ($appliedVoucher) {
+                        $remaining = $appliedVoucher->kuota - $appliedVoucher->digunakan;
+                        if ($remaining < $jumlahTiket) {
+                            throw new \Exception("Kuota voucher tidak mencukupi. Tersisa {$remaining} kuota, dibutuhkan {$jumlahTiket}.");
+                        }
 
-            // 5. Attach volunteer
-            foreach ($pengunjung as $p) {
-                $volunteer = Volunteer::firstOrCreate(
-                    ['email' => $p['email']],
-                    [
-                        'name'          => $p['name'],
-                        'telepon'       => $p['telepon'],
-                        'jenis_kelamin' => $p['jenis_kelamin'] ?? null,
-                    ]
-                );
-                // Update jenis_kelamin if existing volunteer doesn't have it yet
-                if (!$volunteer->wasRecentlyCreated && empty($volunteer->jenis_kelamin) && !empty($p['jenis_kelamin'])) {
-                    $volunteer->update(['jenis_kelamin' => $p['jenis_kelamin']]);
+                        $emailUtama   = $pengunjung[0]['email'];
+                        $sudahDipakai = Transaksi::where('id_voucher', $appliedVoucher->id)
+                            ->where('email', $emailUtama)
+                            ->whereIn('status_pembayaran', ['Pending', 'Success'])
+                            ->exists();
+                        if ($sudahDipakai) {
+                            throw new \Exception('Voucher ini sudah pernah digunakan oleh email ' . $emailUtama . '.');
+                        }
+
+                        $voucherId         = $appliedVoucher->id;
+                        $discountPerTicket = $appliedVoucher->nilai_diskon;
+                        $appliedVoucher->increment('digunakan', $jumlahTiket);
+                    }
                 }
-                $transaksi->volunteers()->syncWithoutDetaching([$volunteer->id]);
-            }
 
-            // 6. Redeem voucher eksternal (lempar exception → rollback jika gagal)
-            if ($appliedVoucher && $appliedVoucher->is_external) {
-                $this->redeemExternalVoucher($appliedVoucher, $transaksi);
-            }
+                // 3. Hitung total server-side
+                $totalPembayaran = max(0, ($event->harga - $discountPerTicket) * $jumlahTiket);
 
-            // 7. Generate instruksi pembayaran. Harus sukses agar transaksi tidak tersimpan tanpa jalur bayar.
-            $this->createPaymentInstrument($transaksi, $payment);
+                // 4. Buat transaksi
+                $invoice   = date('YmdHis') . uniqid();
+                $utamaData = $pengunjung[0];
 
-            DB::commit();
+                $transaksi = Transaksi::create([
+                    'id_event'           => $event->id,
+                    'invoice'            => $invoice,
+                    'jumlah_tiket'       => $jumlahTiket,
+                    'total_pembayaran'   => $totalPembayaran,
+                    'name'               => $utamaData['name'],
+                    'telepon'            => $this->formatPhone($utamaData['telepon']),
+                    'email'              => $utamaData['email'],
+                    'status_pembayaran'  => 'Pending',
+                    'tanggal_register'   => now(),
+                    'tanggal_pembayaran' => null,
+                    'id_payment'         => $payment->id,
+                    'id_voucher'         => $voucherId,
+                ]);
 
-            Log::info('Transaction created', [
-                'invoice'         => $transaksi->invoice,
-                'event_id'        => $event->id,
-                'total'           => $totalPembayaran,
-                'ticket_count'    => $jumlahTiket,
-                'voucher_applied' => $voucherId !== null,
-                'payment_type'    => $payment->type,
-            ]);
-
-            return $transaksi;
+                // 5. Attach volunteer
+                foreach ($pengunjung as $p) {
+                    $volunteer = Volunteer::firstOrCreate(
+                        ['email' => $p['email']],
+                        [
+                            'name'          => $p['name'],
+                            'telepon'       => $p['telepon'],
+                            'jenis_kelamin' => $p['jenis_kelamin'] ?? null,
+                        ]
+                    );
+                    if (! $volunteer->wasRecentlyCreated && empty($volunteer->jenis_kelamin) && ! empty($p['jenis_kelamin'])) {
+                        $volunteer->update(['jenis_kelamin' => $p['jenis_kelamin']]);
+                    }
+                    $transaksi->volunteers()->syncWithoutDetaching([$volunteer->id]);
+                }
+            });
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Checkout process gagal: ' . $e->getMessage(), [
-                'exception'    => $e,
+            Log::error('Checkout process gagal (fase DB): ' . $e->getMessage(), [
                 'event_id'     => $event->id ?? null,
                 'jumlah_tiket' => $jumlahTiket,
                 'voucher_code' => $voucherCode,
             ]);
             throw $e;
         }
+
+        // ── Fase 2: HTTP call DI LUAR transaction ─────────────────────────────
+        // Jika gagal di sini, compensating transaction: release reservation.
+
+        try {
+            // 6. Redeem voucher eksternal
+            if ($appliedVoucher && $appliedVoucher->is_external) {
+                $this->redeemExternalVoucher($appliedVoucher, $transaksi);
+            }
+
+            // 7. Generate instruksi pembayaran Midtrans
+            $transaksi->load('event');
+            $this->createPaymentInstrument($transaksi, $payment);
+
+        } catch (\Exception $e) {
+            Log::error('Checkout process gagal (fase HTTP), melepas reservasi: ' . $e->getMessage(), [
+                'invoice'      => $transaksi->invoice,
+                'event_id'     => $event->id,
+                'voucher_code' => $voucherCode,
+            ]);
+
+            // Compensating transaction: kembalikan stok + kuota voucher + hapus transaksi
+            DB::transaction(function () use ($transaksi) {
+                $this->releaseReservation($transaksi);
+                $transaksi->volunteers()->detach();
+                $transaksi->forceDelete();
+            });
+
+            throw $e;
+        }
+
+        Log::info('Transaction created', [
+            'invoice'         => $transaksi->invoice,
+            'event_id'        => $event->id,
+            'total'           => $transaksi->total_pembayaran,
+            'ticket_count'    => $jumlahTiket,
+            'voucher_applied' => $transaksi->id_voucher !== null,
+            'payment_type'    => $payment->type,
+        ]);
+
+        return $transaksi;
     }
 
     /**

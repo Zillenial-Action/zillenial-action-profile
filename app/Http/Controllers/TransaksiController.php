@@ -279,48 +279,16 @@ class TransaksiController extends Controller
      */
     public function export(Request $request)
     {
-        $data = Transaksi::with(['event:id,name', 'payment:id,name'])
-            ->orderByDesc('created_at')
-            ->when($request->tanggal_awal && $request->tanggal_akhir, fn($q) => 
-                $q->whereDate('created_at', '>=', $request->tanggal_awal)
-                  ->whereDate('created_at', '<=', $request->tanggal_akhir)
-            )
-            ->when($request->tanggal_awal && !$request->tanggal_akhir, fn($q) => 
-                $q->whereDate('created_at', $request->tanggal_awal)
-            )
-            ->when($request->id_event, fn($q) => 
-                $q->where('id_event', $request->id_event)
-            )
-            ->when($request->status_pembayaran, fn($q) => 
-                $q->where('status_pembayaran', $request->status_pembayaran)
-            )
-            ->when($request->id_payment, fn($q) => 
-                $q->where('id_payment', $request->id_payment)
-            )
-            ->get();
-
-        $formattedTransaksi = $data->map(fn($item) => [
-            'id' => $item->id,
-            'id_event' => $item->id_event,
-            'event' => $item->event?->name,
-            'invoice' => $item->invoice,
-            'name' => $item->name,
-            'email' => $item->email,
-            'telepon' => $item->telepon,
-            'status_pembayaran' => $item->status_pembayaran,
-            'tanggal_register' => $item->tanggal_register?->format('d-m-y h:i A'),
-            'tanggal_pembayaran' => $item->tanggal_pembayaran?->format('d-m-y h:i A'),
-            'payment' => $item->payment?->name,
-            'created_at' => $item->created_at->format('d-m-Y h:i A'),
+        $filters = $request->only([
+            'tanggal_awal', 'tanggal_akhir', 'id_event', 'status_pembayaran', 'id_payment',
         ]);
 
         Log::info('Transaction export requested', [
-            'total_records' => $formattedTransaksi->count(),
             'user_id' => auth()->id(),
-            'filters' => $request->only(['tanggal_awal', 'tanggal_akhir', 'id_event', 'status_pembayaran', 'id_payment']),
+            'filters' => $filters,
         ]);
 
-        return Excel::download(new ExportTransaksi($formattedTransaksi), 'Transaksi.xlsx');
+        return Excel::download(new ExportTransaksi($filters), 'Transaksi.xlsx');
     }
 
     /**

@@ -80,42 +80,20 @@ class VolunteerController extends Controller
      */
     public function export(Request $request)
     {
-        $eventName = null;
-        if ($request->event_id) {
-            $event = Event::find($request->event_id);
-            $eventName = $event?->name;
+        $filters  = $request->only(['event_id']);
+        $filename = 'Volunteer.xlsx';
+
+        if (! empty($filters['event_id'])) {
+            $event    = Event::find($filters['event_id']);
+            $filename = $event ? 'Volunteer-' . str($event->name)->slug() . '.xlsx' : 'Volunteer.xlsx';
         }
 
-        $data = Volunteer::withCount('transaksis')
-            ->orderByDesc('created_at')
-            ->when($request->event_id, fn($q) =>
-                $q->whereHas('transaksis', fn($query) =>
-                    $query->where('id_event', $request->event_id)
-                )
-            )
-            ->get();
-
-        $formatted = $data->map(fn($item) => [
-            'id'              => $item->id,
-            'name'            => $item->name,
-            'email'           => $item->email,
-            'telepon'         => $item->telepon,
-            'jenis_kelamin'   => $item->jenis_kelamin ?? '-',
-            'jumlah_transaksi'=> $item->transaksis_count,
-            'created_at'      => $item->created_at?->format('d-m-Y H:i'),
-        ]);
-
-        $filename = $eventName
-            ? 'Volunteer-' . str($eventName)->slug() . '.xlsx'
-            : 'Volunteer.xlsx';
-
         Log::info('Volunteer export requested', [
-            'total_records' => $formatted->count(),
-            'event_id'      => $request->event_id,
-            'user_id'       => auth()->id(),
+            'event_id' => $filters['event_id'] ?? null,
+            'user_id'  => auth()->id(),
         ]);
 
-        return Excel::download(new ExportVolunteer($formatted), $filename);
+        return Excel::download(new ExportVolunteer($filters), $filename);
     }
 
     /**

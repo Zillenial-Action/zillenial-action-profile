@@ -31,7 +31,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends nginx \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
-RUN install-php-extensions pdo_mysql mbstring exif pcntl bcmath gd intl zip curl opcache
+RUN install-php-extensions pdo_mysql mbstring exif pcntl bcmath gd intl zip curl opcache redis
 
 WORKDIR /var/www/html
 

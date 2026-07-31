@@ -145,6 +145,15 @@
 
     </div>
 
+    <style>
+        .nowrap-table th,
+        .nowrap-table td {
+            white-space: nowrap;
+        }
+    </style>
+@endsection
+
+@push('modals')
     {{-- Export Modal --}}
     <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -182,11 +191,4 @@
             </div>
         </div>
     </div>
-
-    <style>
-        .nowrap-table th,
-        .nowrap-table td {
-            white-space: nowrap;
-        }
-    </style>
-@endsection
+@endpush

@@ -22,6 +22,44 @@
             </div>
         </div>
 
+        {{-- Export Modal --}}
+        <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exportModalLabel">
+                            <i class="bi bi-file-earmark-excel me-2 text-success"></i>Export Volunteer ke Excel
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
+                    </div>
+                    <form method="POST" action="{{ route('volunteer.export') }}">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-0">
+                                <label for="exportEventId" class="form-label">Filter Event</label>
+                                <select class="form-select" id="exportEventId" name="event_id">
+                                    <option value="">— Semua Event (export semua volunteer) —</option>
+                                    @foreach ($events as $event)
+                                        <option value="{{ $event->id }}"
+                                            {{ request('event_id') == $event->id ? 'selected' : '' }}>
+                                            {{ $event->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Pilih event untuk mengexport volunteer event tersebut saja.</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-download me-1"></i>Download Excel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         {{-- Data card --}}
         <div class="card">
             <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -152,43 +190,3 @@
         }
     </style>
 @endsection
-
-@push('modals')
-    {{-- Export Modal --}}
-    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exportModalLabel">
-                        <i class="bi bi-file-earmark-excel me-2 text-success"></i>Export Volunteer ke Excel
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
-                </div>
-                <form method="POST" action="{{ route('volunteer.export') }}">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="mb-0">
-                            <label for="exportEventId" class="form-label">Filter Event</label>
-                            <select class="form-select" id="exportEventId" name="event_id">
-                                <option value="">— Semua Event (export semua volunteer) —</option>
-                                @foreach ($events as $event)
-                                    <option value="{{ $event->id }}"
-                                        {{ request('event_id') == $event->id ? 'selected' : '' }}>
-                                        {{ $event->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="form-text">Pilih event untuk mengexport volunteer event tersebut saja.</div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-download me-1"></i>Download Excel
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-@endpush

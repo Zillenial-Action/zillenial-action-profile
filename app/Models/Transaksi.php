@@ -64,6 +64,7 @@ class Transaksi extends Model
         'public_token',
         'snap_token',
         'payment_instructions',
+        'pengunjung_data',
     ];
 
     /**
@@ -88,6 +89,7 @@ class Transaksi extends Model
         'total_pembayaran' => 'integer',
         'status_pembayaran' => 'string',
         'payment_instructions' => 'array',
+        'pengunjung_data' => 'array',
     ];
 
     protected static function booted(): void

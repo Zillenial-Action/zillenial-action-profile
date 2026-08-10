@@ -92,7 +92,9 @@ class CheckoutService
                 // 3. Hitung total server-side
                 $totalPembayaran = max(0, ($event->harga - $discountPerTicket) * $jumlahTiket);
 
-                // 4. Buat transaksi
+                // 4. Buat transaksi. Data pengunjung disimpan mentah — volunteer & pivot
+                // baru dibuat oleh materializeVolunteers() saat status_pembayaran = Success,
+                // supaya transaksi gagal/expired tidak pernah meninggalkan data personal.
                 $invoice   = date('YmdHis') . uniqid();
                 $utamaData = $pengunjung[0];
 
@@ -109,23 +111,8 @@ class CheckoutService
                     'tanggal_pembayaran' => null,
                     'id_payment'         => $payment->id,
                     'id_voucher'         => $voucherId,
+                    'pengunjung_data'    => $pengunjung,
                 ]);
-
-                // 5. Attach volunteer
-                foreach ($pengunjung as $p) {
-                    $volunteer = Volunteer::firstOrCreate(
-                        ['email' => $p['email']],
-                        [
-                            'name'          => $p['name'],
-                            'telepon'       => $p['telepon'],
-                            'jenis_kelamin' => $p['jenis_kelamin'] ?? null,
-                        ]
-                    );
-                    if (! $volunteer->wasRecentlyCreated && empty($volunteer->jenis_kelamin) && ! empty($p['jenis_kelamin'])) {
-                        $volunteer->update(['jenis_kelamin' => $p['jenis_kelamin']]);
-                    }
-                    $transaksi->volunteers()->syncWithoutDetaching([$volunteer->id]);
-                }
             });
         } catch (\Exception $e) {
             Log::error('Checkout process gagal (fase DB): ' . $e->getMessage(), [
@@ -159,7 +146,6 @@ class CheckoutService
             // Compensating transaction: kembalikan stok + kuota voucher + hapus transaksi
             DB::transaction(function () use ($transaksi) {
                 $this->releaseReservation($transaksi);
-                $transaksi->volunteers()->detach();
                 $transaksi->forceDelete();
             });
 
@@ -176,6 +162,37 @@ class CheckoutService
         ]);
 
         return $transaksi;
+    }
+
+    /**
+     * Buat (atau pakai ulang) Volunteer dari pengunjung_data transaksi dan pasang pivotnya.
+     * Dipanggil hanya saat status_pembayaran sudah/akan menjadi Success — panggilan berulang
+     * aman (idempotent) karena Volunteer dicari via firstOrCreate dan pivot pakai syncWithoutDetaching.
+     *
+     * @return \Illuminate\Support\Collection<int, Volunteer>
+     */
+    public function materializeVolunteers(Transaksi $transaksi): \Illuminate\Support\Collection
+    {
+        $pengunjung = $transaksi->pengunjung_data ?? [];
+        $volunteers = collect();
+
+        foreach ($pengunjung as $p) {
+            $volunteer = Volunteer::firstOrCreate(
+                ['email' => $p['email']],
+                [
+                    'name'          => $p['name'],
+                    'telepon'       => $p['telepon'],
+                    'jenis_kelamin' => $p['jenis_kelamin'] ?? null,
+                ]
+            );
+            if (! $volunteer->wasRecentlyCreated && empty($volunteer->jenis_kelamin) && ! empty($p['jenis_kelamin'])) {
+                $volunteer->update(['jenis_kelamin' => $p['jenis_kelamin']]);
+            }
+            $transaksi->volunteers()->syncWithoutDetaching([$volunteer->id]);
+            $volunteers->push($volunteer);
+        }
+
+        return $volunteers;
     }
 
     /**

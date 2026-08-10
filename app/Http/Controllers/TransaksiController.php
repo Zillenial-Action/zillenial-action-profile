@@ -29,6 +29,8 @@ use App\Mail\SendTicket;
  */
 class TransaksiController extends Controller
 {
+    public function __construct(protected \App\Services\CheckoutService $checkoutService) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -368,12 +370,14 @@ class TransaksiController extends Controller
         $oldStatus = $transaksi->status_pembayaran;
 
         if ($newStatus === 'Success') {
-            if ($transaksi->volunteers->isEmpty()) {
+            $hasPengunjungData = ! empty($transaksi->pengunjung_data);
+
+            if (! $hasPengunjungData && $transaksi->volunteers->isEmpty()) {
                 return response()->json(['message' => 'Tidak ada volunteer yang terdaftar untuk transaksi ini!'], 400);
             }
 
             try {
-                DB::transaction(function () use ($transaksi, $oldStatus) {
+                DB::transaction(function () use ($transaksi, $oldStatus, $hasPengunjungData) {
                     $fresh = Transaksi::where('id', $transaksi->id)
                         ->lockForUpdate()
                         ->first();
@@ -386,6 +390,10 @@ class TransaksiController extends Controller
                         'status_pembayaran'  => 'Success',
                         'tanggal_pembayaran' => now(),
                     ]);
+
+                    if ($hasPengunjungData) {
+                        $this->checkoutService->materializeVolunteers($fresh);
+                    }
 
                     if ($oldStatus === 'Failed') {
                         Event::where('id', $fresh->id_event)
@@ -407,7 +415,7 @@ class TransaksiController extends Controller
             $failedEmails = [];
             $ticketUrl   = $this->ticketUrl($transaksi);
 
-            foreach ($transaksi->volunteers as $volunteer) {
+            foreach ($transaksi->volunteers()->get() as $volunteer) {
                 try {
                     Mail::to($volunteer->email)->queue(
                         new SendTicket($transaksi->invoice, $ticketUrl)

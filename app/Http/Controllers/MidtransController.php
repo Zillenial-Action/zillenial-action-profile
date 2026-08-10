@@ -118,6 +118,8 @@ class MidtransController extends Controller
                             'tanggal_pembayaran' => now(),
                         ]);
 
+                        $this->checkoutService->materializeVolunteers($fresh);
+
                         return $fresh;
                     });
                 } catch (\Exception $e) {

@@ -7,7 +7,6 @@ use App\Models\Event;
 use App\Models\KodeVoucher;
 use App\Models\Payment;
 use App\Models\Transaksi;
-use App\Models\Volunteer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -83,13 +82,10 @@ class MidtransNotificationReleaseTest extends TestCase
             'id_voucher' => null,
             'jumlah_tiket' => 2,
             'status_pembayaran' => 'Pending',
+            'pengunjung_data' => [
+                ['name' => 'Budi', 'email' => 'budi@gmail.com', 'telepon' => '+6281234567890'],
+            ],
         ]);
-        $volunteer = Volunteer::create([
-            'name' => 'Budi',
-            'email' => 'budi@gmail.com',
-            'telepon' => '+6281234567890',
-        ]);
-        $transaksi->volunteers()->attach($volunteer->id);
 
         $this->notify($transaksi->invoice, 'settlement', '200', '100000.00')
             ->assertStatus(200);
@@ -97,6 +93,9 @@ class MidtransNotificationReleaseTest extends TestCase
         $transaksi->refresh();
         $this->assertSame('Success', $transaksi->status_pembayaran);
         $this->assertNotNull($transaksi->tanggal_pembayaran);
+        // Volunteer baru dibuat sekarang, setelah status Success.
+        $this->assertSame(1, $transaksi->volunteers()->count());
+        $this->assertDatabaseHas('volunteers', ['email' => 'budi@gmail.com']);
         // Stok TIDAK dikembalikan saat sukses.
         $this->assertSame(8, $event->fresh()->jumlah_tiket);
         Mail::assertQueued(SendTicket::class);

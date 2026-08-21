@@ -20,18 +20,14 @@
 
         {{-- Filter panel --}}
         <div class="card mb-3">
-            <div class="card-header d-flex align-items-center gap-2"
-                style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#filterPanel"
-                aria-expanded="{{ (request('tanggal_awal') || request('tanggal_akhir') || request('id_event') || request('status_pembayaran')) ? 'true' : 'false' }}">
+            <div class="card-header d-flex align-items-center gap-2">
                 <i class="bi bi-funnel me-1"></i>
                 <span class="fw-semibold">Filter Transaksi</span>
                 @if(request('tanggal_awal') || request('tanggal_akhir') || request('id_event') || request('status_pembayaran'))
                     <span class="badge bg-primary ms-1">Aktif</span>
                 @endif
-                <i class="bi bi-chevron-down ms-auto"></i>
             </div>
-            <div class="collapse {{ (request('tanggal_awal') || request('tanggal_akhir') || request('id_event') || request('status_pembayaran')) ? 'show' : '' }}"
-                id="filterPanel">
+            <div id="filterPanel">
                 <div class="card-body">
                     <form method="GET" action="{{ route('transaksi.filter') }}">
                         <div class="row g-3">

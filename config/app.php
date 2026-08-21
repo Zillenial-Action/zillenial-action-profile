@@ -194,7 +194,9 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\TelescopeServiceProvider::class,
+        // Telescope registered conditionally in AppServiceProvider::register() —
+        // laravel/telescope is a require-dev package, absent on production
+        // (composer install --no-dev), so it must not be hard-required here.
 
     ],
 

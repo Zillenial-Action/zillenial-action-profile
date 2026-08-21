@@ -241,6 +241,47 @@ class CheckoutService
         ]);
     }
 
+    /**
+     * Kebalikan dari releaseReservation(): pakai lagi stok tiket dan kuota voucher yang
+     * sebelumnya dilepas, dipakai saat admin mengembalikan transaksi Failed ke Pending secara
+     * manual. Melempar exception jika stok/kuota voucher sudah terpakai transaksi lain sejak
+     * dilepas — pemanggil wajib menjalankan ini di dalam DB transaction yang sama dengan
+     * perubahan status (dengan row lock) agar konsisten dan tidak balapan dengan checkout lain.
+     */
+    public function reserveReservation(Transaksi $transaksi): void
+    {
+        if ($transaksi->id_event) {
+            $affected = Event::where('id', $transaksi->id_event)
+                ->where('jumlah_tiket', '>=', $transaksi->jumlah_tiket)
+                ->decrement('jumlah_tiket', $transaksi->jumlah_tiket);
+
+            if ($affected === 0) {
+                throw new \Exception('Stok tiket tidak mencukupi untuk mengaktifkan kembali transaksi ini.');
+            }
+        }
+
+        if ($transaksi->id_voucher) {
+            $voucher = KodeVoucher::where('id', $transaksi->id_voucher)
+                ->lockForUpdate()
+                ->first();
+
+            if ($voucher) {
+                $remaining = $voucher->kuota - $voucher->digunakan;
+                if ($remaining < $transaksi->jumlah_tiket) {
+                    throw new \Exception('Kuota voucher tidak mencukupi untuk mengaktifkan kembali transaksi ini.');
+                }
+                $voucher->increment('digunakan', $transaksi->jumlah_tiket);
+            }
+        }
+
+        Log::info('Reservasi transaksi diaktifkan kembali', [
+            'invoice'      => $transaksi->invoice,
+            'event_id'     => $transaksi->id_event,
+            'ticket_count' => $transaksi->jumlah_tiket,
+            'voucher_id'   => $transaksi->id_voucher,
+        ]);
+    }
+
     private function formatPhone(string $phone): string
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);

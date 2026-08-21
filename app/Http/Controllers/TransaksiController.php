@@ -476,17 +476,35 @@ class TransaksiController extends Controller
         } else {
             // Update status to Pending or Failed
             try {
-                $transaksi->update([
-                    'status_pembayaran' => $newStatus,
-                    'tanggal_pembayaran' => null,
-                ]);
+                DB::transaction(function () use ($transaksi, $newStatus) {
+                    $fresh = Transaksi::where('id', $transaksi->id)
+                        ->lockForUpdate()
+                        ->first();
 
-                // Return tickets if status changed to Failed
-                if ($newStatus === 'Failed' && $oldStatus !== 'Failed') {
-                    if ($transaksi->event) {
-                        $transaksi->event->increment('jumlah_tiket', $transaksi->jumlah_tiket);
+                    if (! $fresh || $fresh->status_pembayaran === $newStatus) {
+                        return;
                     }
-                }
+
+                    // Lepas reservasi stok/voucher saat transaksi pindah ke Failed (dari status
+                    // apa pun selain Failed) — pakai status TERKINI dari DB (bukan $oldStatus
+                    // yang dibaca sebelum lock) agar tidak dobel dengan webhook/cron yang berjalan
+                    // bersamaan.
+                    if ($newStatus === 'Failed' && $fresh->status_pembayaran !== 'Failed') {
+                        $this->checkoutService->releaseReservation($fresh);
+                    }
+
+                    // Kebalikannya: saat transaksi Failed diaktifkan kembali ke Pending, pakai
+                    // lagi reservasi yang sempat dilepas supaya stok tidak "bocor" tiap kali
+                    // status di-toggle bolak-balik Pending <-> Failed.
+                    if ($newStatus === 'Pending' && $fresh->status_pembayaran === 'Failed') {
+                        $this->checkoutService->reserveReservation($fresh);
+                    }
+
+                    $fresh->update([
+                        'status_pembayaran' => $newStatus,
+                        'tanggal_pembayaran' => null,
+                    ]);
+                });
 
                 Log::info("Transaction status updated to {$newStatus}", [
                     'transaksi_id' => $transaksi->id,

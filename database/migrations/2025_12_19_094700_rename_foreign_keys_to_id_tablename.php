@@ -16,7 +16,9 @@ return new class extends Migration
     public function up(): void
     {
         // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        }
 
         // Rename columns in kode_vouchers table
         if (Schema::hasColumn('kode_vouchers', 'event_id')) {
@@ -71,7 +73,9 @@ return new class extends Migration
         }
 
         // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
     }
 
     /**
@@ -80,7 +84,9 @@ return new class extends Migration
     public function down(): void
     {
         // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        }
 
         // Revert transaksi_volunteers
         if (Schema::hasColumn('transaksi_volunteers', 'id_volunteer')) {
@@ -135,6 +141,8 @@ return new class extends Migration
         }
 
         // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        }
     }
 };

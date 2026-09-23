@@ -51,6 +51,37 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($email.'|'.$request->ip());
         });
 
+        RateLimiter::for('customer-login', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email')));
+
+            return [
+                Limit::perMinute(5)->by('email:'.$email),
+                Limit::perMinute(30)->by('ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('customer-register', function (Request $request) {
+            return [
+                Limit::perMinute(3)->by('email:'.strtolower(trim((string) $request->input('email')))),
+                Limit::perMinute(10)->by('ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('customer-password', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by('email:'.strtolower(trim((string) $request->input('email')))),
+                Limit::perMinute(20)->by('ip:'.$request->ip()),
+            ];
+        });
+
+        RateLimiter::for('customer-verification', function (Request $request) {
+            return Limit::perMinute(3)->by('customer:'.($request->user('customer')?->id ?? $request->ip()));
+        });
+
+        RateLimiter::for('customer-oauth', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip());
+        });
+
         RateLimiter::for('checkout', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });

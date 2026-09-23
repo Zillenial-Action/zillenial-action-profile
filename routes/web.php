@@ -14,6 +14,7 @@ use App\Http\Controllers\PixelController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\VolunteerController;
+use App\Http\Controllers\Api\CustomerAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,6 +42,19 @@ Route::post('/transaksi/post/{slug}', [PortalController::class, 'transaksiPost']
 // Route::get('/portal/search', [PortalController::class, 'eventSearch'])->name('portal.search');
 Route::get('/tiket/{invoice}', [PortalController::class, 'tiket'])->name('portal.tiket');
 
+// Customer email verification, password-link bridge, and Google OAuth callback.
+Route::get('/auth/email/verify/{id}/{hash}', [CustomerAuthController::class, 'verifyEmail'])
+    ->middleware('signed')
+    ->name('verification.verify');
+Route::get('/password/reset/{token}', [CustomerAuthController::class, 'passwordResetRedirect'])
+    ->name('password.reset');
+Route::get('/auth/google/redirect', [CustomerAuthController::class, 'googleRedirect'])
+    ->middleware('throttle:customer-oauth')
+    ->name('customer.google.redirect');
+Route::get('/auth/google/callback', [CustomerAuthController::class, 'googleCallback'])
+    ->middleware('throttle:customer-oauth')
+    ->name('customer.google.callback');
+
 
 // Auth
 Route::get('/login', [AuthController::class, 'login'])->name('login');
@@ -48,7 +62,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/auth', [AuthController::class, 'auth'])->middleware('throttle:login')->name('auth');
 
 
-Route::middleware('auth')->group(function () {
+Route::middleware('auth:web')->group(function () {
     // Admin
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 

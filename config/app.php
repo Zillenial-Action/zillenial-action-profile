@@ -58,6 +58,10 @@ return [
 
     'asset_url' => env('ASSET_URL', '/'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:4321'),
+    'public_backend_url' => env('PUBLIC_BACKEND_URL', env('APP_URL', 'http://localhost')),
+    'google_auth_enabled' => (bool) env('PUBLIC_GOOGLE_AUTH_ENABLED', true),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

@@ -13,9 +13,6 @@ class RouteSecurityMiddlewareTest extends TestCase
         $this->assertRouteHasMiddleware('api.voucher.validate', 'throttle:voucher');
         $this->assertRouteUriHasMiddleware('api/checkout', 'POST', 'throttle:checkout');
         $this->assertRouteUriHasMiddleware('api/transaksi/{invoice}', 'GET', 'throttle:transaction-status');
-        $this->assertRouteUriHasMiddleware('api/auth/me', 'GET', 'auth:customer');
-        $this->assertRouteUriHasMiddleware('api/account/orders', 'GET', 'auth:customer');
-        $this->assertRouteUriHasMiddleware('api/account/orders', 'GET', 'customer.verified');
     }
 
     private function assertRouteHasMiddleware(string $name, string $middleware): void

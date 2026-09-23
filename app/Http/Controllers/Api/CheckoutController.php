@@ -9,7 +9,6 @@ use App\Services\CheckoutService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 
@@ -63,11 +62,6 @@ class CheckoutController extends Controller
                 $data['pengunjung'],
                 $data['voucher_code'] ?? null
             );
-
-            $customer = Auth::guard('customer')->user();
-            if ($customer && $customer->hasVerifiedEmail()) {
-                $transaksi->forceFill(['id_customer' => $customer->id])->save();
-            }
 
             return response()->json([
                 'success'              => true,

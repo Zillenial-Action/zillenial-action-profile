@@ -61,7 +61,6 @@ class Transaksi extends Model
         'tanggal_pembayaran',
         'id_payment',
         'id_voucher',
-        'id_customer',
         'public_token',
         'snap_token',
         'payment_instructions',
@@ -166,11 +165,6 @@ class Transaksi extends Model
     public function voucher(): BelongsTo
     {
         return $this->belongsTo(KodeVoucher::class, 'id_voucher');
-    }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class, 'id_customer');
     }
 
     /**

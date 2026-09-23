@@ -10,9 +10,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement('ALTER TABLE payments MODIFY no_rek VARCHAR(255) NULL');
-        }
+        DB::statement('ALTER TABLE payments MODIFY no_rek VARCHAR(255) NULL');
     }
 
     /**
@@ -20,9 +18,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement("UPDATE payments SET no_rek = '' WHERE no_rek IS NULL");
-            DB::statement('ALTER TABLE payments MODIFY no_rek VARCHAR(255) NOT NULL');
-        }
+        DB::statement("UPDATE payments SET no_rek = '' WHERE no_rek IS NULL");
+        DB::statement('ALTER TABLE payments MODIFY no_rek VARCHAR(255) NOT NULL');
     }
 };

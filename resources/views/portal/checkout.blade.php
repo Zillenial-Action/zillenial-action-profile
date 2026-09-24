@@ -261,39 +261,28 @@
                                 <div class="container mt-5">
                                     <h3 class="mb-4">Metode Pembayaran</h3>
                                     <div class="list-group">
-                                        @foreach ($payment as $index => $item)
-                                            <label
-                                                class="list-group-item d-flex justify-content-between align-items-center">
-                                                <input type="radio" name="payment" value="{{ $item->id }}"
-                                                    class="form-check-input mx-3"
-                                                    {{ $index === 0 || stripos($item->name, 'qris') !== false ? 'checked' : '' }}>
-                                                <div class="d-flex justify-content-end align-items-center flex-grow-1">
-                                                    <img src="{{ asset($item->image) }}" alt="{{ $item->name }}"
-                                                        class="me-2" style="width: 110px; height: 40px;">
-                                                    <span class="fw-semibold">{{ $item->name }}</span>
+                                        @if ($payment)
+                                            <div class="list-group-item d-flex align-items-center">
+                                                <i class="bi bi-credit-card-2-front fs-3 me-3"
+                                                    style="color: #5a2d67"></i>
+                                                <div>
+                                                    <span class="fw-semibold d-block">Bayar via Midtrans</span>
+                                                    <small class="text-muted">
+                                                        Pilih metode pembayaran (Transfer Bank/VA, GoPay, QRIS, kartu
+                                                        kredit, dan lainnya) di halaman pembayaran berikutnya.
+                                                    </small>
                                                 </div>
-                                            </label>
-                                        @endforeach
+                                            </div>
+                                        @else
+                                            <div class="alert alert-warning mb-0">
+                                                Metode pembayaran Midtrans belum tersedia. Silakan hubungi admin.
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                                 <script>
                                     function validatePayment() {
-                                        const selected = document.querySelector('input[name="payment"]:checked');
-                                        if (!selected) {
-                                            // Jika tidak ada metode yang dipilih
-                                            Swal.fire({
-                                                icon: 'warning',
-                                                title: 'Metode Pembayaran Belum Dipilih!',
-                                                text: 'Silakan pilih salah satu metode pembayaran.',
-                                                toast: true,
-                                                position: 'top-end',
-                                                timer: 3000,
-                                                showConfirmButton: false
-
-                                            });
-                                            return false; // mencegah form submit
-                                        }
-                                        return true; // izinkan submit jika sudah dipilih
+                                        return true;
                                     }
                                 </script>
                             </div>
@@ -582,7 +571,8 @@
                     },
                     body: JSON.stringify({
                         code: voucherCode,
-                        event_id: eventId
+                        event_id: eventId,
+                        jumlah_tiket: counter
                     })
                 });
 
@@ -609,6 +599,15 @@
                     this.textContent = 'Diterapkan ✓';
                     this.disabled = true;
                     this.style.backgroundColor = '#28a745';
+
+                    // Voucher external hanya untuk 1 volunteer: kunci jumlah tiket ke 1.
+                    if (result.is_external) {
+                        counter = 1;
+                        jumlahTiketInput.value = 1;
+                        counterDisplay.innerText = 1;
+                        document.getElementById('increase-btn').disabled = true;
+                        document.getElementById('decrease-btn').disabled = true;
+                    }
 
                     // Update total price with discount
                     updateTotalPriceWithDiscount();

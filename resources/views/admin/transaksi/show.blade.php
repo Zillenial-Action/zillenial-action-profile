@@ -77,7 +77,7 @@
                                 </div>
                                 <div class="h-100 p-3 d-flex flex-column justify-content-center w-100">
                                     <p><strong>Metode Pembayaran</strong></p>
-                                    <p>{{ $transaksi->payment->name }}</p>
+                                    <p>{{ $transaksi->payment->name ?? '-' }}</p>
                                 </div>
                                 <div class="h-100 p-3 d-flex flex-column justify-content-center w-100">
                                     <p><strong>Status Pembayaran</strong></p>

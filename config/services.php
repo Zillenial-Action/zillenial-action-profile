@@ -25,10 +25,22 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
+    'resend' => [
+        'api_key' => env('RESEND_API_KEY'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+
+    'chatkebaikan' => [
+        'base_url' => env('CHATKEBAIKAN_BASE_URL', 'https://chatkebaikan.raihmimpi.id'),
+        'validate_path' => env('CHATKEBAIKAN_VALIDATE_PATH', '/api/dr/voucher/validate/{kode}'),
+        'redeem_url' => env('CHATKEBAIKAN_REDEEM_URL', 'https://chatkebaikan.raihmimpi.id/api/dr/voucher/redeem'),
+        'redeem_method' => env('CHATKEBAIKAN_REDEEM_METHOD', 'POST'),
+        'timeout' => (int) env('CHATKEBAIKAN_TIMEOUT', 10),
     ],
 
 ];

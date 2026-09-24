@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use App\Models\Event;
 use App\Exports\EventExport;
+use App\Services\HtmlSanitizer;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
@@ -29,12 +30,15 @@ class EventController extends Controller
      */
     protected ImageService $imageService;
 
+    protected HtmlSanitizer $htmlSanitizer;
+
     /**
      * Create a new controller instance.
      */
-    public function __construct(ImageService $imageService)
+    public function __construct(ImageService $imageService, HtmlSanitizer $htmlSanitizer)
     {
         $this->imageService = $imageService;
+        $this->htmlSanitizer = $htmlSanitizer;
     }
     /**
      * Display a listing of the resource.
@@ -81,6 +85,7 @@ class EventController extends Controller
     {
         try {
             $data = $request->validated();
+            $data = $this->prepareEventData($data);
 
             if ($request->hasFile('image')) {
                 $path = 'image/event/' . date('Y-m');
@@ -140,6 +145,7 @@ class EventController extends Controller
     {
         try {
             $data = $request->validated();
+            $data = $this->prepareEventData($data);
 
             if ($request->hasFile('image')) {
                 // Delete old image and its thumbnail
@@ -183,24 +189,30 @@ class EventController extends Controller
     public function destroy(Event $event): RedirectResponse
     {
         try {
-            $eventId = $event->id;
+            $pendingCount = $event->transaksis()->where('status_pembayaran', 'Pending')->count();
+            if ($pendingCount > 0) {
+                return redirect()->route('event.index')
+                    ->with('error', "Event tidak bisa dihapus: ada {$pendingCount} transaksi Pending yang masih aktif.");
+            }
+
+            $eventId   = $event->id;
             $eventName = $event->name;
-            
+
             $event->delete();
             Cache::forget('homepage_events');
-            
+
             Log::info('Event soft deleted', [
-                'event_id' => $eventId,
+                'event_id'   => $eventId,
                 'event_name' => $eventName,
-                'user_id' => auth()->id(),
+                'user_id'    => auth()->id(),
             ]);
-            
+
             return redirect()->route('event.index')->with('success', 'Event berhasil dihapus');
         } catch (\Exception $e) {
             Log::error('Error deleting event', [
                 'event_id' => $event->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id(),
+                'error'    => $e->getMessage(),
+                'user_id'  => auth()->id(),
             ]);
             return redirect()->route('event.index')->with('error', 'Gagal menghapus event');
         }
@@ -270,47 +282,14 @@ class EventController extends Controller
      */
     public function export(Request $request)
     {
-        $query = Event::query()
-            ->orderByDesc('created_at')
-            ->when($request->waktu_awal && $request->waktu_akhir, fn($q) => 
-                $q->whereDate('created_at', '>=', $request->waktu_awal)
-                  ->whereDate('created_at', '<=', $request->waktu_akhir)
-            )
-            ->when($request->waktu_awal && !$request->waktu_akhir, fn($q) => 
-                $q->whereDate('created_at', $request->waktu_awal)
-            )
-            ->when($request->mitra, fn($q) => 
-                $q->where('mitra', 'like', '%' . $request->mitra . '%')
-            )
-            ->when(isset($request->status), fn($q) => 
-                $q->where('status', $request->status)
-            );
-
-        $data = $query->get();
-
-        $formattedEvents = $data->map(fn($event) => [
-            'id' => $event->id,
-            'name' => $event->name,
-            'mitra' => $event->mitra,
-            'website' => $event->website,
-            'status' => $event->status ? 'Aktif' : 'Tidak Aktif',
-            'waktu_mulai' => $event->waktu_mulai->format('d-m-Y'),
-            'waktu_berakhir' => $event->waktu_berakhir->format('d-m-Y'),
-            'nama_tempat' => $event->nama_tempat,
-            'alamat' => $event->alamat,
-            'kota' => $event->kota,
-            'jumlah_tiket' => $event->jumlah_tiket,
-            'harga' => $event->harga,
-            'created_at' => $event->created_at->format('d-m-Y h:i A'),
-        ]);
+        $filters = $request->only(['waktu_awal', 'waktu_akhir', 'mitra', 'status']);
 
         Log::info('Event export requested', [
-            'total_records' => $formattedEvents->count(),
             'user_id' => auth()->id(),
-            'filters' => $request->only(['waktu_awal', 'waktu_akhir', 'mitra', 'status']),
+            'filters' => $filters,
         ]);
 
-        return Excel::download(new EventExport($formattedEvents), 'Event.xlsx');
+        return Excel::download(new EventExport($filters), 'Event.xlsx');
     }
 
     /**
@@ -388,5 +367,46 @@ class EventController extends Controller
             ]);
             return redirect()->route('event.index')->with('error', 'Gagal mengubah status');
         }
+    }
+
+    /**
+     * Normalize event form data before it is persisted.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private function prepareEventData(array $data): array
+    {
+        $benefits = $data['benefits'] ?? [];
+
+        if (is_string($benefits)) {
+            $benefits = preg_split('/\r\n|\r|\n/', $benefits) ?: [];
+        }
+
+        $data['benefits'] = collect($benefits)
+            ->map(fn ($item) => trim((string) $item))
+            ->filter()
+            ->values()
+            ->all();
+
+        $data['agenda'] = collect($data['agenda'] ?? [])
+            ->map(fn ($item) => [
+                'time_label' => trim((string) ($item['time_label'] ?? '')),
+                'title' => trim((string) ($item['title'] ?? '')),
+                'description' => trim((string) ($item['description'] ?? '')),
+            ])
+            ->filter(fn ($item) => $item['time_label'] !== '' || $item['title'] !== '' || $item['description'] !== '')
+            ->values()
+            ->all();
+
+        $data['direction'] = isset($data['direction']) && trim((string) $data['direction']) !== ''
+            ? trim((string) $data['direction'])
+            : null;
+
+        if (array_key_exists('deskripsi', $data)) {
+            $data['deskripsi'] = $this->htmlSanitizer->sanitize($data['deskripsi'] ?? null);
+        }
+
+        return $data;
     }
 }

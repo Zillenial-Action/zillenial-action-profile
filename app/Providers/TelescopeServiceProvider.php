@@ -39,9 +39,20 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
             return;
         }
 
-        Telescope::hideRequestParameters(['_token']);
+        Telescope::hideRequestParameters([
+            '_token',
+            'password',
+            'password_confirmation',
+            'current_password',
+            'signature_key',
+            'snap_token',
+            'token',
+            'public_token',
+            'payment_instructions',
+        ]);
 
         Telescope::hideRequestHeaders([
+            'authorization',
             'cookie',
             'x-csrf-token',
             'x-xsrf-token',

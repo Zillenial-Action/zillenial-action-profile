@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Payment;
-use App\Services\ImageService;
 use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
+use App\Models\Payment;
+use App\Services\ImageService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 /**
@@ -31,6 +31,7 @@ class PaymentController extends Controller
     {
         $this->imageService = $imageService;
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -64,7 +65,7 @@ class PaymentController extends Controller
      */
     public function create(): View
     {
-        $title = "Add Payment";
+        $title = 'Add Payment';
 
         return view('admin.payment.create', compact('title'));
     }
@@ -76,9 +77,10 @@ class PaymentController extends Controller
     {
         try {
             $data = $request->validated();
+            $data['no_rek'] = blank($data['no_rek'] ?? null) ? null : $data['no_rek'];
 
             if ($request->hasFile('image')) {
-                $path = 'image/payment/' . date('Y-m');
+                $path = 'image/payment/'.date('Y-m');
                 $data['image'] = $this->imageService->compress(
                     $request->file('image'),
                     $path
@@ -88,9 +90,10 @@ class PaymentController extends Controller
             $data['status'] = true;
 
             Payment::create($data);
-            
+
             // Clear payment cache
             Cache::forget('active_payment_methods');
+            Cache::forget('portal_snap_payment_method');
 
             Log::info('Payment method created', [
                 'payment_name' => $data['name'],
@@ -103,6 +106,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
             ]);
+
             return redirect()->route('payment.create')->with('error', 'Gagal menambahkan payment');
         }
     }
@@ -134,6 +138,7 @@ class PaymentController extends Controller
     {
         try {
             $data = $request->validated();
+            $data['no_rek'] = blank($data['no_rek'] ?? null) ? null : $data['no_rek'];
 
             if ($request->hasFile('image')) {
                 // Delete old image
@@ -141,7 +146,7 @@ class PaymentController extends Controller
                     $this->imageService->delete($payment->image);
                 }
 
-                $path = 'image/payment/' . date('Y-m');
+                $path = 'image/payment/'.date('Y-m');
                 $data['image'] = $this->imageService->compress(
                     $request->file('image'),
                     $path
@@ -149,9 +154,10 @@ class PaymentController extends Controller
             }
 
             $payment->update($data);
-            
+
             // Clear payment cache
             Cache::forget('active_payment_methods');
+            Cache::forget('portal_snap_payment_method');
 
             Log::info('Payment method updated', [
                 'payment_id' => $payment->id,
@@ -166,6 +172,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
             ]);
+
             return redirect()->route('payment.edit', $payment)->with('error', 'Gagal memperbarui payment');
         }
     }
@@ -178,16 +185,17 @@ class PaymentController extends Controller
         try {
             $paymentId = $payment->id;
             $paymentName = $payment->name;
-            
+
             $payment->delete();
             Cache::forget('active_payment_methods');
-            
+            Cache::forget('portal_snap_payment_method');
+
             Log::info('Payment method soft deleted', [
                 'payment_id' => $paymentId,
                 'payment_name' => $paymentName,
                 'user_id' => auth()->id(),
             ]);
-            
+
             return redirect()->route('payment.index')->with('success', 'Payment berhasil dihapus');
         } catch (\Exception $e) {
             Log::error('Error deleting payment method', [
@@ -195,6 +203,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
             ]);
+
             return redirect()->route('payment.index')->with('error', 'Gagal menghapus payment');
         }
     }
@@ -221,6 +230,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
             ]);
+
             return redirect()->route('payment.trashed')->with('error', 'Gagal memulihkan payment');
         }
     }
@@ -254,6 +264,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
             ]);
+
             return redirect()->route('payment.trashed')->with('error', 'Gagal menghapus payment permanen');
         }
     }
@@ -263,12 +274,11 @@ class PaymentController extends Controller
      */
     public function search(Request $request): View
     {
-        $title = "Search Payment";
+        $title = 'Search Payment';
 
         $data = Payment::query()
             ->orderByDesc('created_at')
-            ->when($request->search, fn($q) => 
-                $q->where('name', 'like', '%' . $request->search . '%')
+            ->when($request->search, fn ($q) => $q->where('name', 'like', '%'.$request->search.'%')
             )
             ->paginate(5);
 

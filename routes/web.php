@@ -1,14 +1,19 @@
 <?php
 
+use App\Http\Controllers\MidtransController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\FailedEmailController;
+use App\Http\Controllers\ErrorLogController;
+use App\Http\Controllers\SentEmailController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PixelController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\VolunteerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,21 +26,26 @@ use App\Http\Controllers\VoucherController;
 |
 */
 
+// Midtrans
+Route::get('/midtrans/finish/{invoice}', [MidtransController::class, 'finish'])->name('midtrans.finish');
+// Webhook POST /midtrans/notification — CSRF dikecualikan di VerifyCsrfToken
+Route::post('/midtrans/notification', [MidtransController::class, 'notification'])->name('midtrans.notification');
+
 // Portal
 Route::get('/', [PortalController::class, 'index'])->name('index');
-Route::get('/view_content/{slug}', [PortalController::class, 'viewContent'])->name('view_content');
-Route::get('/checkout/{slug}', [PortalController::class, 'checkout'])->name('checkout');
+// Route::get('/view_content/{slug}', [PortalController::class, 'viewContent'])->name('view_content');
+// Route::get('/checkout/{slug}', [PortalController::class, 'checkout'])->name('checkout');
 Route::get('/invoice/{invoice}', [PortalController::class, 'invoice'])->name('invoice');
-Route::post('/transaksi/post/{slug}', [PortalController::class, 'transaksiPost'])->name('transaksi.post');
-Route::get('/event-sostrip', [PortalController::class, 'program'])->name('event.sostrip');
-Route::get('/portal/search', [PortalController::class, 'eventSearch'])->name('portal.search');
+Route::post('/transaksi/post/{slug}', [PortalController::class, 'transaksiPost'])->middleware('throttle:checkout')->name('transaksi.post');
+// Route::get('/event-sostrip', [PortalController::class, 'program'])->name('event.sostrip');
+// Route::get('/portal/search', [PortalController::class, 'eventSearch'])->name('portal.search');
 Route::get('/tiket/{invoice}', [PortalController::class, 'tiket'])->name('portal.tiket');
 
 
 // Auth
 Route::get('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::post('/auth', [AuthController::class, 'auth'])->name('auth');
+Route::post('/auth', [AuthController::class, 'auth'])->middleware('throttle:login')->name('auth');
 
 
 Route::middleware('auth')->group(function () {
@@ -57,7 +67,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
 
     // Status Update
-    Route::post('/transaksi/update', [TransaksiController::class, 'updateStatus'])->name('transaksi.update');
+    Route::post('/transaksi/update', [TransaksiController::class, 'updateStatus'])->name('transaksi.update-status');
+    Route::post('/transaksi/{transaksi}/kirim-email', [TransaksiController::class, 'sendTicketEmail'])->name('transaksi.send-email');
     Route::put('/event/update-status/{event}', [EventController::class, 'updateStatus'])->name('event.update.status');
 
     // Event - Soft Delete Management
@@ -80,6 +91,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/pixel/{id}/restore', [PixelController::class, 'restore'])->name('pixel.restore');
     Route::delete('/pixel/{id}/force-delete', [PixelController::class, 'forceDelete'])->name('pixel.forceDelete');
 
+    // Volunteer - Search & Export
+    Route::get('/volunteer/search', [VolunteerController::class, 'search'])->name('volunteer.search');
+    Route::post('/volunteer/export', [VolunteerController::class, 'export'])->name('volunteer.export');
+
+    // Volunteer - Soft Delete Management
+    Route::get('/volunteer/trashed', [VolunteerController::class, 'trashed'])->name('volunteer.trashed');
+    Route::post('/volunteer/{id}/restore', [VolunteerController::class, 'restore'])->name('volunteer.restore');
+    Route::delete('/volunteer/{id}/force-delete', [VolunteerController::class, 'forceDelete'])->name('volunteer.forceDelete');
+
     // Voucher - Search
     Route::get('/voucher/search', [VoucherController::class, 'search'])->name('voucher.search');
 
@@ -88,10 +108,26 @@ Route::middleware('auth')->group(function () {
     Route::post('/voucher/{id}/restore', [VoucherController::class, 'restore'])->name('voucher.restore');
     Route::delete('/voucher/{id}/force-delete', [VoucherController::class, 'forceDelete'])->name('voucher.forceDelete');
 
+    // Email Tidak Terkirim (failed jobs) — tracking & kirim ulang
+    Route::get('/failed-email', [FailedEmailController::class, 'index'])->name('failed-email.index');
+    Route::post('/failed-email/retry-all', [FailedEmailController::class, 'retryAll'])->name('failed-email.retryAll');
+    Route::post('/failed-email/{uuid}/retry', [FailedEmailController::class, 'retry'])->name('failed-email.retry');
+    Route::delete('/failed-email/{uuid}', [FailedEmailController::class, 'destroy'])->name('failed-email.destroy');
+
+    Route::get('/sent-email', [SentEmailController::class, 'index'])->name('sent-email.index');
+    Route::delete('/sent-email/clear-all', [SentEmailController::class, 'clearAll'])->name('sent-email.clearAll');
+    Route::delete('/sent-email/{id}', [SentEmailController::class, 'destroy'])->name('sent-email.destroy');
+
+    // Error Log
+    Route::get('/error-log', [ErrorLogController::class, 'index'])->name('error-log.index');
+    Route::post('/error-log/clear', [ErrorLogController::class, 'clear'])->name('error-log.clear');
+    Route::get('/error-log/download', [ErrorLogController::class, 'download'])->name('error-log.download');
+
     // Resource Routes
     Route::resource('/event', EventController::class);
     Route::resource('/transaksi', TransaksiController::class);
     Route::resource('/payment', PaymentController::class);
     Route::resource('/pixel', PixelController::class);
     Route::resource('/voucher', VoucherController::class);
+    Route::resource('/volunteer', VolunteerController::class)->only(['index', 'destroy']);
 });

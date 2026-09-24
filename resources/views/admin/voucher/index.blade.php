@@ -1,32 +1,45 @@
 @extends('components.layout.app')
 
 @section('content')
-    <div class="container mt-4">
+    <div class="container-fluid px-3 px-lg-4 mt-3">
 
-        <div class="row justify-content-center">
-            <div class="col-md-12">
-                <x-form-alerts />
+        <x-form-alerts />
 
-                <div class="py-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="{{ route('voucher.create') }}" class="btn btn-success me-1">
-                            <i class="fas fa-plus"></i> Tambah Voucher
-                        </a>
-                        <a href="{{ route('voucher.trashed') }}" class="btn btn-danger">
-                            <i class="fas fa-trash"></i> Terhapus
-                        </a>
+        {{-- Page header --}}
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div>
+                <h2 class="page-title">Kode Voucher</h2>
+                <p class="page-subtitle mb-0">Kelola voucher diskon, kuota, dan masa berlaku.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('voucher.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Tambah Voucher
+                </a>
+                <a href="{{ route('voucher.trashed') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-trash3 me-1"></i>Terhapus
+                </a>
+            </div>
+        </div>
+
+        {{-- Data card --}}
+        <div class="card">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span>Daftar Voucher</span>
+                <form method="GET" action="{{ route('voucher.search') }}" role="search"
+                    style="width: min(320px, 100%);">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input class="form-control" type="search" name="search" value="{{ request('search') }}"
+                            placeholder="Cari voucher..." aria-label="Cari voucher">
+                        <button class="btn btn-primary" type="submit">Cari</button>
                     </div>
-
-                    <form class="d-flex ml-2" method="GET" action="{{ route('voucher.search') }}">
-                        <input class="form-control mr-2" type="search" id="search" name="search"
-                            placeholder="Cari voucher..." aria-label="Search">
-                        <button class="btn btn-outline-success" type="submit">Cari</button>
-                    </form>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
+                </form>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive nowrap-table"
+                    style="border:0;box-shadow:none;border-radius:0;background:transparent;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
                             <tr>
                                 <th>No</th>
                                 <th>Kode</th>
@@ -37,15 +50,22 @@
                                 <th>Digunakan</th>
                                 <th>Kadaluarsa</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($data as $item)
                                 <tr>
                                     <td>{{ $loop->iteration + ($data->currentPage() - 1) * $data->perPage() }}</td>
-                                    <td><code class="bg-light px-2 py-1 rounded">{{ $item->kode }}</code></td>
-                                    <td>{{ $item->name_voucher }}</td>
+                                    <td>
+                                        <code class="bg-light px-2 py-1 rounded">{{ $item->kode }}</code>
+                                        @if ($item->is_external)
+                                            <span class="badge bg-primary ms-1" title="Voucher dari API Eksternal">
+                                                <i class="bi bi-link-45deg"></i> External
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="fw-semibold">{{ $item->name_voucher }}</td>
                                     <td>{{ $item->event->name ?? '-' }}</td>
                                     <td>Rp {{ number_format($item->nilai_diskon, 0, ',', '.') }}</td>
                                     <td>{{ $item->kuota }}</td>
@@ -57,8 +77,9 @@
                                     </td>
                                     <td>
                                         @if ($item->tanggal_kadaluarsa < now())
-                                            <span
-                                                class="text-danger">{{ $item->tanggal_kadaluarsa->format('d-m-Y') }}</span>
+                                            <span class="text-danger fw-semibold">
+                                                {{ $item->tanggal_kadaluarsa->format('d-m-Y') }}
+                                            </span>
                                         @else
                                             {{ $item->tanggal_kadaluarsa->format('d-m-Y') }}
                                         @endif
@@ -70,37 +91,44 @@
                                             <span class="badge bg-secondary">Nonaktif</span>
                                         @endif
                                     </td>
-                                    <td>
-                                        <a href="{{ route('voucher.edit', $item->id) }}"
-                                            class="btn btn-sm btn-warning m-1 text-white">
-                                            Edit
-                                        </a>
-                                        <form action="{{ route('voucher.destroy', $item->id) }}" method="POST"
-                                            style="display:inline;" onsubmit="return confirm('Hapus voucher ini?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger m-1">
-                                                Hapus
-                                            </button>
-                                        </form>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{{ route('voucher.edit', $item->id) }}"
+                                                class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form action="{{ route('voucher.destroy', $item->id) }}" method="POST"
+                                                class="m-0" onsubmit="return confirm('Hapus voucher ini?');">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="text-center text-muted py-4">
-                                        Belum ada voucher
-                                    </td>
+                                    <td colspan="10" class="text-center text-muted py-4">Belum ada voucher.</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-
-                <div class="d-flex justify-content-end">
-                    {!! $data->appends(request()->query())->links('pagination::bootstrap-4') !!}
-                </div>
-
             </div>
         </div>
+
+        <div class="d-flex justify-content-end mt-3">
+            {!! $data->appends(request()->query())->links('pagination::bootstrap-4') !!}
+        </div>
+
     </div>
+
+    <style>
+        .nowrap-table th,
+        .nowrap-table td {
+            white-space: nowrap;
+        }
+    </style>
 @endsection

@@ -11,7 +11,7 @@
             <ul>
                 <li><a href="#hero" class="active">Home<br></a></li>
                 <li><a href="#about">About</a></li>
-                <li><a href="#services">Social Trip Events</a></li>
+                <li><a href="https://sostrip.zillenialaction.id/">Social Trip Events</a></li>
                 <li><a href="#portfolio">Portfolio</a></li>
                 <li><a href="#features">Zillenial Action Programs</a></li>
                 <li><a href="#gallery">Gallery</a></li>

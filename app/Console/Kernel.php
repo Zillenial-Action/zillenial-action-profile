@@ -12,7 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Fallback pengembalian stok/kuota bila webhook expire Midtrans tidak sampai.
+        // Tiap 15 menit agar channel expiry pendek (QRIS/e-wallet) tetap dilepas tepat waktu.
+        $schedule->command('transaksi:expire-pending')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping();
     }
 
     /**

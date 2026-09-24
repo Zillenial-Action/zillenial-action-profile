@@ -146,17 +146,13 @@
                             </div>
                         </div>
 
-                        <!-- Metode Pembayaran -->
                         <div class="shadow-sm mb-4">
                             <div class="card-body p-3">
-                                <div class="d-flex align-items-center mb-3">
-                                    <img src="{{ asset($data->payment->image) }}" alt="GoPay" width="110"
-                                        height="40">
-                                    <span class="ms-2 fw-bold">{{ $data->payment->name }}</span>
-                                </div>
                                 <div class="d-flex justify-content-between">
-                                    {{-- <p class="mb-1 text-muted">Kode Pesanan</p> --}}
-                                    {{-- <p class="mb-1 fw-bold">{{ $data->invoice }}</p> --}}
+                                    <p class="mb-1 text-muted">Metode Pembayaran</p>
+                                    <p class="mb-1 fw-bold" style="color: #5a2d67">
+                                        {{ $data->payment?->type === 'midtrans' ? $data->payment->name : 'Midtrans' }}
+                                    </p>
                                 </div>
                                 <div class="d-flex justify-content-between">
                                     <p class="mb-1 text-muted">Total Pembayaran</p>
@@ -165,86 +161,30 @@
                             </div>
                         </div>
 
-                        <!-- QR Code -->
+                        <!-- Midtrans Snap Payment Button -->
+                        @if ($data->snap_token && $data->status_pembayaran === 'Pending')
                         <div class="text-center mb-4">
                             <div class="card-body">
-                                @if ($data->payment->name == 'Qris')
-                                    <p>Scan kode QR di bawah</p>
-                                    <img src="{{ asset('image/qris.jpg') }}" alt="QR Code" class="img-fluid mb-3">
-                                @else
-                                    <p>Verifikasi pembayaran dengan menghubungi admin dan kirim bukti transfer. Setelah
-                                        pembayaran Anda berhasil admin verifikasi, tiket akan segera dikirimkan ke
-                                        email yang Anda cantumkan pada formulir.
-                                    </p>
-                                    <p class="text-center" style="color: #5a2d67;">
-                                        <span id="accountNumberDisplay">{{ $data->payment->no_rek }}</span>
-                                        <button class="btn btn-sm btn-outline-secondary ms-2"
-                                            onclick="copyToClipboard('accountNumberDisplay')">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
-                                                fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
-                                                <path
-                                                    d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z" />
-                                                <path
-                                                    d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z" />
-                                            </svg>
-                                            Salin
-                                        </button>
-                                        <br>
-                                    </p>
-                                    <p class="text-center" style="color: #5a2d67;">An/ YAYASAN ZILLENIAL ACTION INDONESIA
-                                    </p>
-
-                                    <script>
-                                        function copyToClipboard(elementId) {
-                                            // Mendapatkan elemen yang berisi teks nomor rekening
-                                            const element = document.getElementById(elementId);
-                                            let textToCopy = element.innerText || element.textContent; // Mengambil teks dari elemen
-
-                                            // Membuat area teks sementara untuk proses penyalinan
-                                            const tempTextArea = document.createElement('textarea');
-                                            tempTextArea.value = textToCopy;
-                                            document.body.appendChild(tempTextArea);
-
-                                            // Memilih teks di area teks sementara
-                                            tempTextArea.select();
-                                            tempTextArea.setSelectionRange(0, 99999); // Untuk perangkat mobile
-
-                                            // Menyalin teks ke clipboard
-                                            try {
-                                                document.execCommand('copy');
-                                                Swal.fire({
-                                                    icon: 'success',
-                                                    title: 'Berhasil',
-                                                    text: 'Nomor rekening berhasil disalin: ' + textToCopy,
-                                                    toast: true,
-                                                    position: 'top-end',
-                                                    timer: 3000,
-                                                    showConfirmButton: false
-                                                });
-                                            } catch (err) {
-                                                console.error('Gagal menyalin: ', err);
-                                                Swal.fire({
-                                                    icon: 'error',
-                                                    title: 'Gagal',
-                                                    text: 'Gagal menyalin nomor rekening. Silakan salin secara manual: ' + textToCopy,
-                                                    toast: true,
-                                                    position: 'top-end',
-                                                    timer: 3000,
-                                                    showConfirmButton: false
-                                                });
-                                            }
-
-                                            // Menghapus area teks sementara
-                                            document.body.removeChild(tempTextArea);
-                                        }
-                                    </script>
-                                @endif
+                                <p class="fw-bold text-muted">Selesaikan pembayaran via Midtrans</p>
+                                <button id="pay-button" class="btn btn-lg w-100 text-white"
+                                    style="background-color: #5a2d67"
+                                    onclick="payWithMidtrans()">
+                                    <i class="bi bi-credit-card-2-front"></i> Bayar Sekarang
+                                </button>
+                            </div>
+                        </div>
+                        @else
+                        <div class="text-center mb-4">
+                            <div class="card-body">
+                                <p>Pembayaran sedang menunggu diproses. Jika tombol pembayaran tidak muncul, silakan
+                                    hubungi admin untuk bantuan.</p>
                                 <a href="https://wa.me/6282121392363?text=Halo%20Kak,%20apakah%20pembayaran%20untuk%20sosial%20trip%20saya%20sudah%20masuk%20"
                                     class="btn btn-lg w-100 text-white" style="background-color: #5a2d67">
-                                    <i class="bi bi-shield-check"></i> Konfirmasi Pembayaran
+                                    <i class="bi bi-shield-check"></i> Hubungi Admin
                                 </a>
                             </div>
                         </div>
+                        @endif
 
                         <!-- Petunjuk Pembayaran -->
                         {{-- <div class="shadow-sm">
@@ -319,6 +259,47 @@
 
     </main>
     @include('components.layout.footer')
+    {{-- Midtrans Snap.js hanya dimuat jika ada snap_token --}}
+    @if ($data->snap_token && $data->status_pembayaran === 'Pending')
+    <script src="{{ config('midtrans.snap_url') }}"
+        data-client-key="{{ config('midtrans.client_key') }}"></script>
+    <script>
+        function payWithMidtrans() {
+            const btn = document.getElementById('pay-button');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Memproses...';
+
+            snap.pay('{{ $data->snap_token }}', {
+                onSuccess: function(result) {
+                    window.location.href = '/midtrans/finish/{{ $data->invoice }}';
+                },
+                onPending: function(result) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-credit-card-2-front"></i> Bayar Sekarang';
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Menunggu Pembayaran',
+                        text: 'Pembayaran sedang diproses. Cek email Anda untuk instruksi lebih lanjut.'
+                    });
+                },
+                onError: function(result) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-credit-card-2-front"></i> Bayar Sekarang';
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Pembayaran Gagal',
+                        text: 'Terjadi kesalahan. Silakan coba lagi.'
+                    });
+                },
+                onClose: function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-credit-card-2-front"></i> Bayar Sekarang';
+                }
+            });
+        }
+    </script>
+    @endif
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {

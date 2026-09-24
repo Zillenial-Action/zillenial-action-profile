@@ -1,70 +1,45 @@
 @extends('components.layout.app')
 
 @section('content')
+    <div class="container-fluid px-3 px-lg-4 mt-3">
 
-    <style>
-        th,
-        td {
-            white-space: nowrap;
-            /* Mencegah teks melipat ke baris baru */
-        }
-    </style>
-    <div class="container mt-4">
+        <x-form-alerts />
 
-        <div class="row justify-content-center">
-            <div class="col-md-12">
-                <!-- Menampilkan Notifikasi Sukses -->
-                @if (session('success'))
-                    <div class="alert alert-success">
-                        {{ session('success') }}
+        {{-- Page header --}}
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+            <div>
+                <h2 class="page-title">Event</h2>
+                <p class="page-subtitle mb-0">Kelola semua event, harga, dan ketersediaan tiket.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('event.create') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>Tambah Event
+                </a>
+                <a href="{{ route('event.trashed') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-trash3 me-1"></i>Terhapus
+                </a>
+            </div>
+        </div>
+
+        {{-- Data card --}}
+        <div class="card">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <span>Daftar Event</span>
+                <form method="GET" action="{{ route('event.search') }}" role="search"
+                    style="width: min(320px, 100%);">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+                        <input class="form-control" type="search" name="search" value="{{ request('search') }}"
+                            placeholder="Cari event..." aria-label="Cari event">
+                        <button class="btn btn-primary" type="submit">Cari</button>
                     </div>
-                @endif
-
-                <!-- Menampilkan Notifikasi Error -->
-                @if (session('error'))
-                    <div class="alert alert-danger">
-                        {{ session('error') }}
-                    </div>
-                @endif
-
-                <!-- Menampilkan Pesan Validasi Error -->
-                @if ($errors->any())
-                    <div class="alert alert-danger">
-                        <ul>
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
-                <div class="py-4 d-flex justify-content-between align-items-center">
-                    <div>
-                        <a href="{{ route('event.create') }}" class="btn btn-success me-1">Tambah</a>
-                        <!-- <button type="button" class="btn btn-info me-1 text-white" data-toggle="modal"
-                                data-target="#exportEvent">Export</button>
-                            <button type="button" class="btn btn-warning text-white me-1" data-toggle="modal"
-                                data-target="#filterEvent">Filter</button> -->
-                        <a href="{{ route('event.trashed') }}" class="btn btn-danger">
-                            Terhapus
-                        </a>
-                    </div>
-
-                    <form class="d-flex ml-2" method="GET" action="{{ route('event.search') }}">
-                        <input class="form-control me-2" type="search" id="search" name="search" placeholder="Search"
-                            aria-label="Search">
-                        <button class="btn btn-outline-success" type="submit">Search</button>
-                    </form>
-                </div>
-
-                <!-- Modal export campaign -->
-                @include('components.modal.exportEvent')
-
-                <!-- Modal filter campaign -->
-                @include('components.modal.filterEvent')
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
+                </form>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive nowrap-table"
+                    style="border:0;box-shadow:none;border-radius:0;background:transparent;">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
                             <tr>
                                 <th>No</th>
                                 <th>Event</th>
@@ -74,25 +49,24 @@
                                 <th>Waktu Berakhir</th>
                                 <th>Kota</th>
                                 <th>Jumlah Tiket</th>
-                                {{-- <th>Terjual</th> --}}
-                                <th>Actions</th>
+                                <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="table-group-divider">
-                            @foreach ($data as $item)
+                        <tbody>
+                            @forelse ($data as $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $item->name }}</td>
+                                    <td class="fw-semibold">{{ $item->name }}</td>
                                     <td>@rupiah($item->harga)</td>
-                                    </td>
                                     <td>
-                                        <form action="{{ route('event.update.status', $item->slug) }}" method="POST">
+                                        <form action="{{ route('event.update.status', $item->slug) }}" method="POST"
+                                            class="m-0">
                                             @csrf
                                             @method('PUT')
                                             @if ($item->status == 1)
-                                                <button type="submit" class="btn btn-sm badge bg-success m-1">Y</button>
+                                                <button type="submit" class="btn btn-sm badge bg-success border-0">Y</button>
                                             @else
-                                                <button type="submit" class="btn btn-sm badge bg-danger m-1">N</button>
+                                                <button type="submit" class="btn btn-sm badge bg-danger border-0">N</button>
                                             @endif
                                         </form>
                                     </td>
@@ -100,29 +74,48 @@
                                     <td>{{ $item->waktu_berakhir }}</td>
                                     <td>{{ $item->kota }}</td>
                                     <td>{{ $item->jumlah_tiket }}</td>
-                                    {{-- <td>20</td> --}}
-                                    <td>
-                                        <a href="{{ route('event.show', $item->slug) }}"
-                                            class="btn btn-sm btn-info m-1 text-white">Lihat</a>
-                                        <a href="{{ route('event.edit', $item->slug) }}"
-                                            class="btn btn-sm btn-warning m-1 text-white">Edit</a>
-                                        <form action="{{ route('event.destroy', $item->slug) }}" method="POST"
-                                            style="display:inline;" onsubmit="return confirmDelete();">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger m-1">Hapus</button>
-                                        </form>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a href="{{ route('event.show', $item->slug) }}"
+                                                class="btn btn-sm btn-outline-primary" title="Lihat">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ route('event.edit', $item->slug) }}"
+                                                class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form action="{{ route('event.destroy', $item->slug) }}" method="POST"
+                                                class="m-0" onsubmit="return confirmDelete();">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                                    <i class="bi bi-trash3"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
-                            @endforeach
+                            @empty
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4">Belum ada event.</td>
+                                </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
-                <div class="d-flex justify-content-end">
-                    {!! $data->appends(request()->query())->links('pagination::bootstrap-4') !!}
-                </div>
-
             </div>
         </div>
+
+        <div class="d-flex justify-content-end mt-3">
+            {!! $data->appends(request()->query())->links('pagination::bootstrap-4') !!}
+        </div>
+
     </div>
+
+    <style>
+        .nowrap-table th,
+        .nowrap-table td {
+            white-space: nowrap;
+        }
+    </style>
 @endsection

@@ -9,18 +9,19 @@
                 <x-form-alerts />
 
                 {{-- Header --}}
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="mb-0">
-                        <i class="fas fa-edit me-2"></i>Edit Event
-                    </h4>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h2 class="page-title">Edit Event</h2>
+                        <p class="page-subtitle mb-0">Perbarui detail event, lokasi, dan tiket.</p>
+                    </div>
                     <a href="{{ route('event.index') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-1"></i>Kembali
+                        <i class="bi bi-arrow-left me-1"></i>Kembali
                     </a>
                 </div>
 
-                <div class="card shadow-sm">
-                    <div class="card-header bg-warning text-dark">
-                        <i class="fas fa-edit me-2"></i>Form Edit Event
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-pencil-square me-2"></i>Form Edit Event
                     </div>
                     <div class="card-body p-4">
                         <form method="POST" action="{{ route('event.update', $event->slug) }}"
@@ -79,6 +80,10 @@
                             <x-form-input name="alamat" label="Alamat Lengkap"
                                 placeholder="Masukkan alamat lengkap lokasi event" :value="$event->alamat" :required="true" />
 
+                            <x-form-input name="direction" label="Link Direction" type="url"
+                                placeholder="https://maps.google.com/?q=nama+lokasi" :value="$event->direction"
+                                hint="Opsional. Isi dengan link Google Maps atau direction lokasi." />
+
                             {{-- Price & Tickets --}}
                             <div class="row">
                                 <div class="col-md-8">
@@ -113,10 +118,14 @@
                                 <input type="hidden" name="deskripsi" id="content">
                             </div>
 
+                            @include('admin.event.partials.benefit-fields', ['event' => $event])
+
+                            @include('admin.event.partials.agenda-fields', ['event' => $event])
+
                             {{-- Submit --}}
                             <div class="d-flex gap-2 pt-3 border-top">
-                                <button type="submit" class="btn btn-warning">
-                                    <i class="fas fa-save me-1"></i>Update Event
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i>Update Event
                                 </button>
                                 <a href="{{ route('event.index') }}" class="btn btn-outline-secondary">
                                     Batal

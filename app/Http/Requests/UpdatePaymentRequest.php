@@ -22,9 +22,21 @@ class UpdatePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|max:100',
-            'no_rek' => 'required|max:100',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'type'                   => ['required', 'in:manual,midtrans'],
+            'name'                   => ['required', 'string', 'max:100'],
+            'no_rek'                 => ['nullable', 'string', 'max:100'],
+            'midtrans_payment_type'  => ['nullable', 'in:bank_transfer,echannel,gopay,shopeepay,qris'],
+            'midtrans_bank'          => ['nullable', 'in:bca,bni,bri,permata,cimb', 'required_if:midtrans_payment_type,bank_transfer'],
+            'image'                  => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'type.required' => 'Tipe payment wajib dipilih.',
+            'type.in'       => 'Tipe payment tidak valid.',
+            'name.required' => 'Nama payment wajib diisi.',
         ];
     }
 }

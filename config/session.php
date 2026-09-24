@@ -155,7 +155,9 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    // "*" bukan domain cookie yang valid: browser menolak cookie session-nya,
+    // sehingga setiap POST (termasuk login admin) gagal dengan 419 Page Expired.
+    'domain' => env('SESSION_DOMAIN') === '*' ? null : env('SESSION_DOMAIN'),
 
     /*
     |--------------------------------------------------------------------------

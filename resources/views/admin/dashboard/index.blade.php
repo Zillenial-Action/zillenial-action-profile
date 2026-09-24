@@ -1,105 +1,117 @@
-<!doctype html>
-<html lang="en">
+@extends('components.layout.app')
 
-<head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+@section('content')
+    <div class="container-fluid px-3 px-lg-4 mt-3">
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
-        integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
-
-    <title>{{ $title }}</title>
-</head>
-
-<body>
-
-    <main class="py-2">
-
-        <div class="container mt-4">
-            <!-- Dashboard Card -->
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header">{{ __('Dashboard') }}</div>
-
-                        <div class="card-body">
-                            @if (session('status'))
-                                <div class="alert alert-success" role="alert">
-                                    {{ session('status') }}
-                                </div>
-                            @endif
-
-                            You are logged in!
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Cards for Companies and Employees -->
-            <div class="row justify-content-center mt-4">
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">Event</div>
-                        <div class="card-body">
-                            <h5 class="card-title">Manage Event</h5>
-                            <p class="card-text">Click di sini untuk melihat, menambah, edit dan delete data</p>
-                            <a href="{{ route('event.index') }}" class="btn btn-primary">Go to Event</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">Metode Pembayaran</div>
-                        <div class="card-body">
-                            <h5 class="card-title">Manage Metode Pembayaran</h5>
-                            <p class="card-text">Click di sini untuk melihat, menambah, edit dan delete data</p>
-                            <a href="{{ route('payment.index') }}" class="btn btn-primary">Go to Metode Pembayaran</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">Transaksi</div>
-                        <div class="card-body">
-                            <h5 class="card-title">Manage Transaksi</h5>
-                            <p class="card-text">Click di sini untuk melihat, menambah, edit dan delete data</p>
-                            <a href="{{ route('transaksi.index') }}" class="btn btn-primary">Go to Transaksi</a>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
+        <div class="mb-4">
+            <h2 class="page-title">Selamat datang, {{ auth()->user()->name ?? 'Admin' }} 👋</h2>
+            <p class="page-subtitle">Ringkasan aktivitas Zillenial Action hari ini.</p>
         </div>
 
-    </main>
+        {{-- Stat cards --}}
+        <div class="row g-3 mb-4">
+            @php
+                $cards = [
+                    ['label' => 'Total Event', 'value' => number_format($stats['events'] ?? 0, 0, ',', '.'), 'icon' => 'bi-calendar-event', 'tint' => '#7d297f'],
+                    ['label' => 'Total Transaksi', 'value' => number_format($stats['transaksi_total'] ?? 0, 0, ',', '.'), 'icon' => 'bi-receipt', 'tint' => '#2563eb'],
+                    ['label' => 'Transaksi Sukses', 'value' => number_format($stats['transaksi_sukses'] ?? 0, 0, ',', '.'), 'icon' => 'bi-check2-circle', 'tint' => '#15803d'],
+                    ['label' => 'Pendapatan', 'value' => 'Rp ' . number_format($stats['pendapatan'] ?? 0, 0, ',', '.'), 'icon' => 'bi-cash-stack', 'tint' => '#b45309'],
+                ];
+            @endphp
+            @foreach ($cards as $c)
+                <div class="col-6 col-xl-3">
+                    <div class="card h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div style="width:48px;height:48px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ $c['tint'] }}1a;color:{{ $c['tint'] }};">
+                                <i class="bi {{ $c['icon'] }}" style="font-size:22px;"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="page-subtitle" style="margin:0;">{{ $c['label'] }}</div>
+                                <div style="font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.2;">{{ $c['value'] }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
 
-    <!-- Optional JavaScript; choose one of the two! -->
+        <div class="row g-3">
+            {{-- Quick actions --}}
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">Akses Cepat</div>
+                    <div class="card-body d-flex flex-column gap-2">
+                        @php
+                            $links = [
+                                ['route' => 'event.index', 'label' => 'Kelola Event', 'icon' => 'bi-calendar-event'],
+                                ['route' => 'transaksi.index', 'label' => 'Kelola Transaksi', 'icon' => 'bi-receipt'],
+                                ['route' => 'payment.index', 'label' => 'Metode Pembayaran', 'icon' => 'bi-credit-card'],
+                                ['route' => 'voucher.index', 'label' => 'Kode Voucher', 'icon' => 'bi-ticket-perforated'],
+                            ];
+                        @endphp
+                        @foreach ($links as $l)
+                            <a href="{{ route($l['route']) }}"
+                                class="d-flex align-items-center gap-3 text-decoration-none p-2 rounded"
+                                style="color:var(--text);border:1px solid var(--border);transition:.15s;"
+                                onmouseover="this.style.background='var(--brand-tint)'" onmouseout="this.style.background='transparent'">
+                                <i class="bi {{ $l['icon'] }}" style="font-size:18px;color:var(--brand);width:22px;text-align:center;"></i>
+                                <span style="font-weight:600;font-size:14px;">{{ $l['label'] }}</span>
+                                <i class="bi bi-chevron-right ms-auto" style="font-size:13px;color:var(--muted);"></i>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
 
-    <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous">
-    </script>
+            {{-- Recent transactions --}}
+            <div class="col-lg-8">
+                <div class="card h-100">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span>Transaksi Terbaru</span>
+                        <a href="{{ route('transaksi.index') }}" class="btn btn-sm btn-outline-primary">Lihat semua</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="border:0;box-shadow:none;border-radius:0;">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Invoice</th>
+                                        <th>Nama</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Tanggal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($recent as $trx)
+                                        <tr>
+                                            <td style="font-weight:600;">{{ $trx->invoice }}</td>
+                                            <td>{{ $trx->name }}</td>
+                                            <td>Rp {{ number_format($trx->total_pembayaran, 0, ',', '.') }}</td>
+                                            <td>
+                                                @php
+                                                    $badge = match ($trx->status_pembayaran) {
+                                                        'Success' => 'bg-success',
+                                                        'Pending' => 'bg-warning text-dark',
+                                                        default => 'bg-danger',
+                                                    };
+                                                @endphp
+                                                <span class="badge {{ $badge }}">{{ $trx->status_pembayaran }}</span>
+                                            </td>
+                                            <td>{{ optional($trx->created_at)->format('d M Y') }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">Belum ada transaksi.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <!-- Option 2: Separate Popper and Bootstrap JS -->
-
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
-        integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"
-        integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"
-        integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous">
-    </script>
-
-</body>
-
-</html>
+    </div>
+@endsection

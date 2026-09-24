@@ -4,9 +4,20 @@
     <div class="container mt-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h2 class="page-title">Tambah Voucher</h2>
+                        <p class="page-subtitle mb-0">Buat kode voucher diskon untuk sebuah event.</p>
+                    </div>
+                    <a href="{{ route('voucher.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Kembali
+                    </a>
+                </div>
+
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">{{ $title }}</h5>
+                        <i class="bi bi-ticket-perforated me-2"></i>Form Voucher
                     </div>
                     <div class="card-body">
                         <x-form-alerts />
@@ -32,13 +43,13 @@
                             <x-form-input name="tanggal_kadaluarsa" label="Tanggal Kadaluarsa" type="date"
                                 required="true" />
 
-                            <div class="d-flex justify-content-between mt-4">
-                                <a href="{{ route('voucher.index') }}" class="btn btn-secondary">
-                                    <i class="fas fa-arrow-left"></i> Kembali
-                                </a>
-                                <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-save"></i> Simpan
+                            <div class="d-flex gap-2 pt-3 mt-2 border-top">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-lg me-1"></i>Simpan
                                 </button>
+                                <a href="{{ route('voucher.index') }}" class="btn btn-outline-secondary">
+                                    Batal
+                                </a>
                             </div>
                         </form>
                     </div>

@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Event;
+use App\Models\Payment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,20 +19,17 @@ class TransaksiFactory extends Factory
     public function definition(): array
     {
         return [
-            'id_event' => rand(1, 5),
-            'invoice' => fake()->unique()->randomNumber(),
+            'id_event' => Event::factory(),
+            'invoice' => fake()->unique()->numerify('##############') . fake()->unique()->lexify('????'),
             'jumlah_tiket' => rand(1, 10),
             'total_pembayaran' => rand(100000, 500000),
             'name' => fake()->name(),
             'email' => fake()->safeEmail(),
             'telepon' => fake()->phoneNumber(),
-            'jenis_kelamin' => fake()->randomElement(['L', 'P']),
-            'tanggal_lahir' => fake()->date(),
             'status_pembayaran' => fake()->randomElement(['Success', 'Failed', 'Pending']),
             'tanggal_register' => fake()->dateTime(),
             'tanggal_pembayaran' => fake()->dateTime(),
-            'id_payment' => rand(1, 5),
+            'id_payment' => Payment::factory(),
         ];
-        
     }
 }

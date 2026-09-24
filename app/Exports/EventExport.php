@@ -2,24 +2,52 @@
 
 namespace App\Exports;
 
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use App\Models\Event;
+use Illuminate\Database\Eloquent\Builder;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
 
-class EventExport implements FromCollection, WithHeadings
+class EventExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
-    protected $event;
-    public function __construct(Collection $event)
+    protected array $filters;
+
+    public function __construct(array $filters = [])
     {
-        $this->event = $event;
+        $this->filters = $filters;
     }
 
-    public function collection()
+    public function query(): Builder
     {
-        return $this->event;
+        return Event::select([
+                'id', 'name', 'mitra', 'website', 'status',
+                'waktu_mulai', 'waktu_berakhir', 'nama_tempat',
+                'alamat', 'kota', 'jumlah_tiket', 'harga', 'created_at',
+            ])
+            ->orderByDesc('created_at')
+            ->when(
+                ! empty($this->filters['waktu_awal']) && ! empty($this->filters['waktu_akhir']),
+                fn ($q) => $q->whereDate('created_at', '>=', $this->filters['waktu_awal'])
+                             ->whereDate('created_at', '<=', $this->filters['waktu_akhir'])
+            )
+            ->when(
+                ! empty($this->filters['waktu_awal']) && empty($this->filters['waktu_akhir']),
+                fn ($q) => $q->whereDate('created_at', $this->filters['waktu_awal'])
+            )
+            ->when(
+                ! empty($this->filters['mitra']),
+                fn ($q) => $q->where('mitra', 'like', '%' . $this->filters['mitra'] . '%')
+            )
+            ->when(
+                isset($this->filters['status']) && $this->filters['status'] !== '',
+                fn ($q) => $q->where('status', $this->filters['status'])
+            );
+    }
+
+    public function chunkSize(): int
+    {
+        return 500;
     }
 
     public function headings(): array
@@ -37,7 +65,26 @@ class EventExport implements FromCollection, WithHeadings
             'Kota',
             'Jumlah Tiket',
             'Harga',
-            'Tanggal di buat'
+            'Tanggal di buat',
+        ];
+    }
+
+    public function map($row): array
+    {
+        return [
+            $row->id,
+            $row->name,
+            $row->mitra,
+            $row->website,
+            $row->status ? 'Aktif' : 'Tidak Aktif',
+            $row->waktu_mulai->format('d-m-Y'),
+            $row->waktu_berakhir->format('d-m-Y'),
+            $row->nama_tempat,
+            $row->alamat,
+            $row->kota,
+            $row->jumlah_tiket,
+            $row->harga,
+            $row->created_at->format('d-m-Y h:i A'),
         ];
     }
 }

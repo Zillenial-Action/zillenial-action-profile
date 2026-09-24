@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\PaymentSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -12,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Membuat 1 user admin
-        \App\Models\User::factory()->admin()->create();
+        // \App\Models\User::factory()->admin()->create();
         
         // Membuat 2 user biasa
         // \App\Models\User::factory(2)->create();
@@ -32,7 +33,7 @@ class DatabaseSeeder extends Seeder
         // Membuat 10 pixel
         // \App\Models\Pixel::factory(4)->create();
 
-        
+        $this->call(PaymentSeeder::class);
 
     }
 }

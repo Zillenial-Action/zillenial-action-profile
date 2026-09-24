@@ -180,44 +180,6 @@
             </div>
 
         </section><!-- /Stats Section -->
-
-        <!-- Services Section -->
-        <section id="services" class="services section">
-
-            <!-- Section Title -->
-            <div class="container section-title " data-aos="fade-up">
-                <p>Social Trip Events</p>
-            </div>
-            <!-- End Section Title -->
-
-            <div class="container">
-
-                <div class="row gy-4">
-                    @foreach ($event as $item)
-                        <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-                            <a href="{{ route('view_content', ['slug' => $item->slug]) }}">
-                                <div class="service-item item-indigo position-relative">
-                                    <x-optimized-image :src="$item->image" :alt="$item->name . ' - Social Trip Event'" class="img-fluid mb-4 rounded"
-                                        width="400" height="300" :use-thumbnail="true" />
-                                    <h3 class="text-start">{{ $item->name }}</h3>
-                                    <p class="text-start">{{ date('d F Y', strtotime($item->waktu_mulai)) }} Pukul
-                                        {{ date('H:i', strtotime($item->waktu_mulai)) }} -
-                                        {{ date('H:i', strtotime($item->waktu_berakhir)) }}</p>
-                                    <p class="text-start">@rupiah($item->harga)</p>
-                                </div>
-                            </a>
-                        </div>
-                    @endforeach
-                </div>
-
-                <!-- Section Title -->
-                <div class="container section-title " data-aos="fade-up">
-                    <br><a href="{{ url('/event-sostrip') }}" class="more-button">Selengkapnya</a>
-                </div>
-                <!-- End Section Title -->
-
-        </section><!-- /Services Section -->
-
         <!-- Values Section -->
         <section id="portfolio" class="values section">
 

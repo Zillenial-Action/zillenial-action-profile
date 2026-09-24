@@ -31,12 +31,15 @@ class ImageService
     }
 
     /**
-     * Resolve public_html root path safely.
+     * Resolve the web-served public root path safely.
+     *
+     * Menggunakan public_path() (folder `public/`, doc root nginx) agar file yang diupload
+     * benar-benar dapat diakses lewat URL — konsisten dengan delete() yang juga pakai public_path().
      */
     protected function publicRoot(string $path = ''): string
     {
         return rtrim(
-            base_path('public_html/' . ltrim($path, '/')),
+            public_path(ltrim($path, '/')),
             '/'
         );
     }

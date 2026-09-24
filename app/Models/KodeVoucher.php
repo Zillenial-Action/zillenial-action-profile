@@ -48,9 +48,9 @@ class KodeVoucher extends Model
         'kode',
         'nilai_diskon',
         'kuota',
-        'digunakan',
         'tanggal_kadaluarsa',
         'status',
+        'is_external',
     ];
 
     /**
@@ -73,6 +73,7 @@ class KodeVoucher extends Model
         'nilai_diskon' => 'integer',
         'kuota' => 'integer',
         'digunakan' => 'integer',
+        'is_external' => 'boolean',
     ];
 
     /**

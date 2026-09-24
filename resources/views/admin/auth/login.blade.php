@@ -1,85 +1,226 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <!-- Required meta tags -->
+<html lang="id">
+
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <title>{{ $title }}</title>
-  </head>
-  <body>
-    
-        <main class="py-4">
-            
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">Login</div>
+    <link href="{{ asset('assets/img/Logo-ZA.png') }}" rel="icon">
+    <title>{{ $title ?? 'Login' }}</title>
 
-                            <div class="card-body">
-                                <form method="POST" action="{{ route('auth') }}">
-                                    @csrf
+    <style>
+        :root {
+            --brand: #7d297f;
+            --brand-dark: #5a2d67;
+            --border: #e9eaf0;
+            --text: #1f2430;
+            --muted: #6b7280;
+        }
 
-                                    <div class="row mb-3">
-                                        <label for="email" class="col-md-4 col-form-label text-md-end">Email Adress</label>
+        * {
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
 
-                                        <div class="col-md-8">
-                                            <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Inter', system-ui, sans-serif;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(1100px 500px at 10% -10%, rgba(125, 41, 127, .22), transparent 60%),
+                radial-gradient(900px 500px at 100% 110%, rgba(90, 45, 103, .25), transparent 55%),
+                #f5f6fa;
+        }
 
-                                            @error('email')
-                                                <span class="invalid-feedback" role="alert">
-                                                    <strong>{{ $message }}</strong>
-                                                </span>
-                                            @enderror
-                                        </div>
-                                    </div>
+        .login-card {
+            width: 100%;
+            max-width: 410px;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px -24px rgba(90, 45, 103, .35);
+            padding: 34px 30px;
+        }
 
-                                    <div class="row mb-3">
-                                        <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
+        .login-logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 15px;
+            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
+            box-shadow: 0 12px 24px -12px rgba(125, 41, 127, .7);
+        }
 
-                                        <div class="col-md-8">
-                                            <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
+        .login-logo img {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+        }
 
-                                            @error('password')
-                                                <span class="invalid-feedback" role="alert">
-                                                    <strong>{{ $message }}</strong>
-                                                </span>
-                                            @enderror
-                                        </div>
-                                    </div>
+        .login-title {
+            text-align: center;
+            font-size: 21px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            margin: 0 0 4px;
+        }
 
-                                    <div class="row mb-0">
-                                        <div class="col-md-8 offset-md-4">
-                                            <button type="submit" class="btn btn-primary">
-                                                {{ __('Login') }}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        .login-sub {
+            text-align: center;
+            color: var(--muted);
+            font-size: 14px;
+            margin: 0 0 24px;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        .field label {
+            display: block;
+            font-size: 13.5px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-wrap i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 17px;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 12px 14px 12px 42px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            font-size: 14.5px;
+            font-family: inherit;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        .field input:focus {
+            outline: none;
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px rgba(125, 41, 127, .12);
+        }
+
+        .field input.is-invalid {
+            border-color: #d92d20;
+        }
+
+        .field-error {
+            color: #d92d20;
+            font-size: 12.5px;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .btn-login {
+            width: 100%;
+            border: 0;
+            border-radius: 12px;
+            padding: 13px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+            cursor: pointer;
+            transition: transform .08s, filter .15s;
+            margin-top: 6px;
+        }
+
+        .btn-login:hover {
+            filter: brightness(1.05);
+        }
+
+        .btn-login:active {
+            transform: scale(.98);
+        }
+
+        .login-foot {
+            text-align: center;
+            color: var(--muted);
+            font-size: 12.5px;
+            margin-top: 20px;
+        }
+
+        .alert-box {
+            background: #fef3f2;
+            border: 1px solid #fecdca;
+            color: #b42318;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 13.5px;
+            margin-bottom: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <form class="login-card" method="POST" action="{{ route('auth') }}">
+        @csrf
+
+        <div class="login-logo">
+            <img src="{{ asset('assets/img/Logo-ZA.png') }}" alt="Zillenial Action">
+        </div>
+        <h1 class="login-title">Selamat Datang</h1>
+        <p class="login-sub">Masuk ke portal admin Zillenial Action</p>
+
+        @if (session('error'))
+            <div class="alert-box">{{ session('error') }}</div>
+        @endif
+
+        <div class="field">
+            <label for="email">Email</label>
+            <div class="input-wrap">
+                <i class="bi bi-envelope"></i>
+                <input id="email" type="email" name="email" value="{{ old('email') }}"
+                    class="@error('email') is-invalid @enderror" placeholder="admin@zillenialaction.com" required
+                    autocomplete="email" autofocus>
             </div>
+            @error('email')
+                <span class="field-error">{{ $message }}</span>
+            @enderror
+        </div>
 
-        </main>
+        <div class="field">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+                <i class="bi bi-lock"></i>
+                <input id="password" type="password" name="password"
+                    class="@error('password') is-invalid @enderror" placeholder="••••••••" required
+                    autocomplete="current-password">
+            </div>
+            @error('password')
+                <span class="field-error">{{ $message }}</span>
+            @enderror
+        </div>
 
-    <!-- Optional JavaScript; choose one of the two! -->
+        <button type="submit" class="btn-login">Masuk</button>
 
-    <!-- Option 1: jQuery and Bootstrap Bundle (includes Popper) -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+        <p class="login-foot">© {{ date('Y') }} Zillenial Action</p>
+    </form>
+</body>
 
-    <!-- Option 2: Separate Popper and Bootstrap JS -->
-    
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js" integrity="sha384-+sLIOodYLS7CIrQpBjl+C7nPvqq+FbNUBDunl/OZv93DB7Ln/533i8e/mZXLi/P+" crossorigin="anonymous"></script>
-   
-  </body>
 </html>

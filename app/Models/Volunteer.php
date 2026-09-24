@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property string $name
  * @property string $email
  * @property string $telepon
+ * @property string|null $jenis_kelamin
  * @property \Carbon\Carbon|null $created_at
  * @property \Carbon\Carbon|null $updated_at
  * @property \Carbon\Carbon|null $deleted_at
@@ -33,6 +34,7 @@ class Volunteer extends Model
         'name',
         'email',
         'telepon',
+        'jenis_kelamin',
     ];
 
     /**

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 /**
  * Class Transaksi
@@ -59,6 +61,10 @@ class Transaksi extends Model
         'tanggal_pembayaran',
         'id_payment',
         'id_voucher',
+        'public_token',
+        'snap_token',
+        'payment_instructions',
+        'pengunjung_data',
     ];
 
     /**
@@ -68,6 +74,7 @@ class Transaksi extends Model
      */
     protected $hidden = [
         'deleted_at',
+        'public_token',
     ];
 
     /**
@@ -81,7 +88,18 @@ class Transaksi extends Model
         'jumlah_tiket' => 'integer',
         'total_pembayaran' => 'integer',
         'status_pembayaran' => 'string',
+        'payment_instructions' => 'array',
+        'pengunjung_data' => 'array',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Transaksi $transaksi): void {
+            if (empty($transaksi->public_token)) {
+                $transaksi->public_token = self::generatePublicToken();
+            }
+        });
+    }
 
     /**
      * Get the route key for the model.
@@ -89,6 +107,40 @@ class Transaksi extends Model
     public function getRouteKeyName(): string
     {
         return 'invoice';
+    }
+
+    /**
+     * Check whether the public invoice page should still be accessible.
+     */
+    public function canAccessInvoice(): bool
+    {
+        if ($this->status_pembayaran === 'Success') {
+            return false;
+        }
+
+        if (! $this->tanggal_register) {
+            return false;
+        }
+
+        return Carbon::parse($this->tanggal_register)->greaterThanOrEqualTo(now()->subDay());
+    }
+
+    public static function generatePublicToken(): string
+    {
+        do {
+            $token = Str::random(48);
+        } while (self::withTrashed()->where('public_token', $token)->exists());
+
+        return $token;
+    }
+
+    public function hasPublicToken(string $token): bool
+    {
+        if (empty($this->public_token) || $token === '') {
+            return false;
+        }
+
+        return hash_equals($this->public_token, $token);
     }
 
     /**
@@ -121,6 +173,6 @@ class Transaksi extends Model
     public function volunteers(): BelongsToMany
     {
         return $this->belongsToMany(Volunteer::class, 'transaksi_volunteers', 'id_transaksi', 'id_volunteer')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 }

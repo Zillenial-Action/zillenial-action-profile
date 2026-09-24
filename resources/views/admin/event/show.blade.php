@@ -73,6 +73,41 @@
                             </li>
                             <li class="list-group-item">
                                 Lokasi : {{ $event->nama_tempat }} | {{ $event->kota }} || {{ $event->alamat }}
+                                @if ($event->direction)
+                                    <br>
+                                    Direction :
+                                    <a href="{{ $event->direction }}" target="_blank" rel="noopener noreferrer">
+                                        Buka Maps
+                                    </a>
+                                @endif
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Yang Kamu Dapat</strong>
+                                @if (!empty($event->benefits))
+                                    <ul class="mb-0 mt-2">
+                                        @foreach ($event->benefits as $benefit)
+                                            <li>{{ $benefit }}</li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <div class="text-muted mt-2">Belum ada benefit.</div>
+                                @endif
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Agenda Event</strong>
+                                @if (!empty($event->agenda))
+                                    <div class="mt-2">
+                                        @foreach ($event->agenda as $agenda)
+                                            <div class="border rounded p-2 mb-2">
+                                                <div class="small text-muted">{{ $agenda['time_label'] ?? '-' }}</div>
+                                                <div class="fw-semibold">{{ $agenda['title'] ?? '-' }}</div>
+                                                <div>{{ $agenda['description'] ?? '-' }}</div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-muted mt-2">Belum ada agenda.</div>
+                                @endif
                             </li>
                             <li class="list-group-item">
                                 {!! $event->deskripsi !!}

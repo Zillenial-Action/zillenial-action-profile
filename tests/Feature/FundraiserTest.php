@@ -71,6 +71,7 @@ class FundraiserTest extends TestCase
         $first = $this->postJson("/api/fundraiser/{$program->id}/kode");
         $first->assertCreated()
             ->assertJsonPath('data.kode.kuota', 10)
+            ->assertJsonPath('data.kode.digunakan', 0)
             ->assertJsonPath('data.nilai_komisi', 15000);
         $this->assertMatchesRegularExpression('/^SITI-[A-Z2-9]{4}$/', $first->json('data.kode.kode'));
 

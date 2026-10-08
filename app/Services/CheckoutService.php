@@ -20,6 +20,7 @@ class CheckoutService
      * Total pembayaran dihitung server-side; jangan percaya nilai dari client.
      *
      * @param  array<int, array{name: string, email: string, telepon: string, jenis_kelamin?: string}>  $pengunjung
+     * @param  array<string, mixed>  $tracking  Atribut UTM dari UtmData::toAttributes().
      * @throws \Exception
      */
     public function process(
@@ -27,7 +28,9 @@ class CheckoutService
         int $jumlahTiket,
         Payment $payment,
         array $pengunjung,
-        ?string $voucherCode = null
+        ?string $voucherCode = null,
+        ?int $customerId = null,
+        array $tracking = []
     ): Transaksi {
         if (! $payment->status || $payment->type !== 'midtrans') {
             throw new \Exception('Metode pembayaran tidak tersedia.');
@@ -43,7 +46,7 @@ class CheckoutService
 
         try {
             DB::transaction(function () use (
-                $event, $jumlahTiket, $payment, $pengunjung, $voucherCode,
+                $event, $jumlahTiket, $payment, $pengunjung, $voucherCode, $customerId, $tracking,
                 &$transaksi, &$appliedVoucher
             ) {
                 // 1. Potong stok secara atomik
@@ -59,6 +62,7 @@ class CheckoutService
                 // 2. Proses voucher
                 $voucherId         = null;
                 $discountPerTicket = 0;
+                $komisiFundraiser  = 0;
 
                 if ($voucherCode) {
                     $appliedVoucher = KodeVoucher::where('kode', strtoupper(trim($voucherCode)))
@@ -83,6 +87,10 @@ class CheckoutService
                             throw new \Exception('Voucher ini sudah pernah digunakan oleh email ' . $emailUtama . '.');
                         }
 
+                        if ($appliedVoucher->id_fundraiser_program) {
+                            $komisiFundraiser = $this->fundraiserKomisi($appliedVoucher, $jumlahTiket, $emailUtama, $customerId);
+                        }
+
                         $voucherId         = $appliedVoucher->id;
                         $discountPerTicket = $appliedVoucher->nilai_diskon;
                         $appliedVoucher->increment('digunakan', $jumlahTiket);
@@ -98,12 +106,13 @@ class CheckoutService
                 $invoice   = date('YmdHis') . uniqid();
                 $utamaData = $pengunjung[0];
 
-                $transaksi = Transaksi::create([
+                $transaksi = Transaksi::create($tracking + [
                     'id_event'           => $event->id,
                     'invoice'            => $invoice,
                     'jumlah_tiket'       => $jumlahTiket,
                     'total_pembayaran'   => $totalPembayaran,
-                    'name'               => $utamaData['name'],
+                    'komisi_fundraiser'  => $komisiFundraiser,
+                    'name'            => $utamaData['name'],
                     'telepon'            => $this->formatPhone($utamaData['telepon']),
                     'email'              => $utamaData['email'],
                     'status_pembayaran'  => 'Pending',
@@ -111,6 +120,7 @@ class CheckoutService
                     'tanggal_pembayaran' => null,
                     'id_payment'         => $payment->id,
                     'id_voucher'         => $voucherId,
+                    'id_customer'        => $customerId,
                     'pengunjung_data'    => $pengunjung,
                 ]);
             });
@@ -243,8 +253,8 @@ class CheckoutService
 
     /**
      * Kebalikan dari releaseReservation(): pakai lagi stok tiket dan kuota voucher yang
-     * sebelumnya dilepas, dipakai saat admin mengembalikan transaksi Failed ke Pending secara
-     * manual. Melempar exception jika stok/kuota voucher sudah terpakai transaksi lain sejak
+     * sebelumnya dilepas, dipakai saat transaksi Failed diaktifkan kembali (admin ke Pending/Success,
+     * atau webhook pembayaran telat). Melempar exception jika stok/kuota voucher sudah terpakai transaksi lain sejak
      * dilepas — pemanggil wajib menjalankan ini di dalam DB transaction yang sama dengan
      * perubahan status (dengan row lock) agar konsisten dan tidak balapan dengan checkout lain.
      */
@@ -280,6 +290,23 @@ class CheckoutService
             'ticket_count' => $transaksi->jumlah_tiket,
             'voucher_id'   => $transaksi->id_voucher,
         ]);
+    }
+
+    /**
+     * Komisi fundraiser untuk transaksi ini (snapshot, per tiket x jumlah tiket).
+     * Fundraiser tidak boleh memakai kodenya sendiri, baik lewat akun yang sama
+     * maupun lewat email akunnya.
+     */
+    private function fundraiserKomisi(KodeVoucher $voucher, int $jumlahTiket, string $emailUtama, ?int $customerId): int
+    {
+        $voucher->loadMissing('fundraiserProgram', 'customer');
+        $owner = $voucher->customer;
+
+        if ($owner && ($owner->id === $customerId || strcasecmp($owner->email, $emailUtama) === 0)) {
+            throw new \Exception('Kode fundraiser tidak bisa dipakai oleh pemilik kodenya sendiri.');
+        }
+
+        return (int) ($voucher->fundraiserProgram?->nilai_komisi ?? 0) * $jumlahTiket;
     }
 
     private function formatPhone(string $phone): string

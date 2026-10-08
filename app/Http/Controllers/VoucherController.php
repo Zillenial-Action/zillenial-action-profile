@@ -110,8 +110,12 @@ class VoucherController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(KodeVoucher $voucher): View
+    public function edit(KodeVoucher $voucher): View|RedirectResponse
     {
+        if ($voucher->id_fundraiser_program) {
+            return $this->redirectToFundraiser($voucher);
+        }
+
         $title = 'Edit Voucher';
         $events = Event::select(['id', 'name'])->orderByDesc('id')->get();
 
@@ -123,6 +127,10 @@ class VoucherController extends Controller
      */
     public function update(Request $request, KodeVoucher $voucher): RedirectResponse
     {
+        if ($voucher->id_fundraiser_program) {
+            return $this->redirectToFundraiser($voucher);
+        }
+
         $request->validate([
             'id_event' => 'required|exists:events,id',
             'name_voucher' => 'required|string|max:100',
@@ -162,6 +170,10 @@ class VoucherController extends Controller
      */
     public function destroy(KodeVoucher $voucher): RedirectResponse
     {
+        if ($voucher->id_fundraiser_program) {
+            return $this->redirectToFundraiser($voucher);
+        }
+
         try {
             $voucherId = $voucher->id;
             $voucherCode = $voucher->kode;
@@ -248,5 +260,16 @@ class VoucherController extends Controller
             ->paginate(10);
 
         return view('admin.voucher.index', compact('title', 'data'));
+    }
+
+    /**
+     * Kode fundraiser mengikuti setting programnya, jadi diubah lewat menu Fundraiser.
+     * Menghapusnya di sini juga membuat fundraiser tidak bisa membuat kode lagi
+     * karena unique index (program, customer) tetap berlaku untuk baris terhapus.
+     */
+    private function redirectToFundraiser(KodeVoucher $voucher): RedirectResponse
+    {
+        return redirect()->route('fundraiser.show', $voucher->id_fundraiser_program)
+            ->with('error', 'Kode fundraiser diatur lewat program fundraiser. Ubah diskon, kuota, tanggal, atau status di sini.');
     }
 }

@@ -64,6 +64,11 @@
                                                 <i class="bi bi-link-45deg"></i> External
                                             </span>
                                         @endif
+                                        @if ($item->id_fundraiser_program)
+                                            <span class="badge bg-warning text-dark ms-1" title="Setting diikuti program fundraiser">
+                                                <i class="bi bi-megaphone"></i> Fundraiser
+                                            </span>
+                                        @endif
                                     </td>
                                     <td class="fw-semibold">{{ $item->name_voucher }}</td>
                                     <td>{{ $item->event->name ?? '-' }}</td>
@@ -92,20 +97,27 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <div class="d-inline-flex gap-1">
-                                            <a href="{{ route('voucher.edit', $item->id) }}"
-                                                class="btn btn-sm btn-outline-secondary" title="Edit">
-                                                <i class="bi bi-pencil"></i>
+                                        @if ($item->id_fundraiser_program)
+                                            <a href="{{ route('fundraiser.show', $item->id_fundraiser_program) }}"
+                                                class="btn btn-sm btn-outline-warning" title="Atur lewat program fundraiser">
+                                                <i class="bi bi-megaphone"></i>
                                             </a>
-                                            <form action="{{ route('voucher.destroy', $item->id) }}" method="POST"
-                                                class="m-0" onsubmit="return confirm('Hapus voucher ini?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
-                                                    <i class="bi bi-trash3"></i>
-                                                </button>
-                                            </form>
-                                        </div>
+                                        @else
+                                            <div class="d-inline-flex gap-1">
+                                                <a href="{{ route('voucher.edit', $item->id) }}"
+                                                    class="btn btn-sm btn-outline-secondary" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <form action="{{ route('voucher.destroy', $item->id) }}" method="POST"
+                                                    class="m-0" onsubmit="return confirm('Hapus voucher ini?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                                        <i class="bi bi-trash3"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty

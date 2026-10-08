@@ -30,9 +30,6 @@ class DatabaseSeeder extends Seeder
         // Membuat 10 transaksi
         // \App\Models\Transaksi::factory(10)->create();
 
-        // Membuat 10 pixel
-        // \App\Models\Pixel::factory(4)->create();
-
         $this->call(PaymentSeeder::class);
 
     }

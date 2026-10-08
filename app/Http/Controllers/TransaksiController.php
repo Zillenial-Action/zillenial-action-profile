@@ -8,12 +8,10 @@ use App\Models\Event;
 use App\Models\Payment;
 use App\Models\Volunteer;
 use App\Models\KodeVoucher;
-use App\Exports\ExportTransaksi;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\StoreTransaksiRequest;
 use App\Http\Requests\UpdateTransaksiRequest;
 use Illuminate\Http\Request;
@@ -144,10 +142,9 @@ class TransaksiController extends Controller
     public function edit(Transaksi $transaksi): View
     {
         $title = 'Edit Transaksi';
-        $payment = Payment::select(['id', 'name'])->get();
-        $events = Event::select(['id', 'name', 'harga'])->get();
+        $transaksi->load(['event:id,name', 'payment:id,name']);
 
-        return view('admin.transaksi.edit', compact('title', 'transaksi', 'payment', 'events'));
+        return view('admin.transaksi.edit', compact('title', 'transaksi'));
     }
 
     /**
@@ -156,19 +153,9 @@ class TransaksiController extends Controller
     public function update(UpdateTransaksiRequest $request, Transaksi $transaksi): RedirectResponse
     {
         try {
-            $validated = $request->validated();
-
-            $event = Event::findOrFail($validated['id_event']);
-
-            $transaksi->update([
-                'id_event' => $validated['id_event'],
-                'jumlah_tiket' => $validated['jumlah_tiket'],
-                'total_pembayaran' => $validated['jumlah_tiket'] * $event->harga,
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-                'telepon' => $validated['telepon'],
-                'id_payment' => $validated['id_payment'],
-            ]);
+            // Hanya data kontak. Event/jumlah tiket/total terikat ke stok, kuota voucher,
+            // data peserta, dan nominal Midtrans, jadi tidak boleh diubah dari form ini.
+            $transaksi->update($request->validated());
 
             Log::info('Transaction updated', [
                 'transaksi_id' => $transaksi->id,
@@ -277,23 +264,6 @@ class TransaksiController extends Controller
     }
 
     /**
-     * Export transactions to Excel.
-     */
-    public function export(Request $request)
-    {
-        $filters = $request->only([
-            'tanggal_awal', 'tanggal_akhir', 'id_event', 'status_pembayaran', 'id_payment',
-        ]);
-
-        Log::info('Transaction export requested', [
-            'user_id' => auth()->id(),
-            'filters' => $filters,
-        ]);
-
-        return Excel::download(new ExportTransaksi($filters), 'Transaksi.xlsx');
-    }
-
-    /**
      * Filter transactions.
      */
     public function filter(Request $request): View
@@ -367,7 +337,6 @@ class TransaksiController extends Controller
         }
 
         $newStatus = $request->input('status', 'Success');
-        $oldStatus = $transaksi->status_pembayaran;
 
         if ($newStatus === 'Success') {
             $hasPengunjungData = ! empty($transaksi->pengunjung_data);
@@ -377,13 +346,20 @@ class TransaksiController extends Controller
             }
 
             try {
-                DB::transaction(function () use ($transaksi, $oldStatus, $hasPengunjungData) {
+                $processed = DB::transaction(function () use ($transaksi, $hasPengunjungData) {
                     $fresh = Transaksi::where('id', $transaksi->id)
                         ->lockForUpdate()
                         ->first();
 
                     if (! $fresh || $fresh->status_pembayaran === 'Success') {
-                        return;
+                        return false;
+                    }
+
+                    // Transaksi Failed sudah melepas stok tiket & kuota voucher; ambil lagi sebelum
+                    // jadi Success. Pakai status TERKINI dari DB agar tidak balapan dengan webhook/cron.
+                    // Melempar exception (dan rollback) jika stok/kuota sudah terpakai transaksi lain.
+                    if ($fresh->status_pembayaran === 'Failed') {
+                        $this->checkoutService->reserveReservation($fresh);
                     }
 
                     $fresh->update([
@@ -395,11 +371,7 @@ class TransaksiController extends Controller
                         $this->checkoutService->materializeVolunteers($fresh);
                     }
 
-                    if ($oldStatus === 'Failed') {
-                        Event::where('id', $fresh->id_event)
-                            ->lockForUpdate()
-                            ->decrement('jumlah_tiket', $fresh->jumlah_tiket);
-                    }
+                    return true;
                 });
             } catch (\Exception $e) {
                 Log::error('Error updating transaction status', [
@@ -408,7 +380,13 @@ class TransaksiController extends Controller
                     'user_id'      => auth()->id(),
                 ]);
 
-                return response()->json(['message' => 'Terjadi kesalahan saat memproses transaksi.'], 500);
+                return response()->json(['message' => 'Terjadi kesalahan saat memproses transaksi: ' . $e->getMessage()], 500);
+            }
+
+            // Sudah Success sebelumnya (klik ganda / webhook lebih dulu): jangan kirim ulang
+            // email tiket maupun redeem voucher eksternal untuk kedua kalinya.
+            if (! $processed) {
+                return response()->json(['message' => 'Transaksi sudah berstatus Success sebelumnya.'], 409);
             }
 
             $sentEmails  = [];

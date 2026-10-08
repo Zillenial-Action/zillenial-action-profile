@@ -6,14 +6,16 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FailedEmailController;
+use App\Http\Controllers\FundraiserProgramController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\SentEmailController;
 use App\Http\Controllers\TransaksiController;
+use App\Http\Controllers\UtmReportController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\PixelController;
 use App\Http\Controllers\PortalController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\VolunteerController;
+use App\Http\Controllers\Api\CustomerAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,6 +43,15 @@ Route::post('/transaksi/post/{slug}', [PortalController::class, 'transaksiPost']
 // Route::get('/portal/search', [PortalController::class, 'eventSearch'])->name('portal.search');
 Route::get('/tiket/{invoice}', [PortalController::class, 'tiket'])->name('portal.tiket');
 
+// Login Google customer Sostrip. Butuh session web hanya untuk menyimpan state OAuth;
+// hasil akhirnya Bearer token, bukan login ke guard web/admin.
+Route::get('/auth/google/redirect', [CustomerAuthController::class, 'googleRedirect'])
+    ->middleware('throttle:customer-oauth')
+    ->name('customer.google.redirect');
+Route::get('/auth/google/callback', [CustomerAuthController::class, 'googleCallback'])
+    ->middleware('throttle:customer-oauth')
+    ->name('customer.google.callback');
+
 
 // Auth
 Route::get('/login', [AuthController::class, 'login'])->name('login');
@@ -56,15 +67,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/event/search', [EventController::class, 'search'])->name('event.search');
     Route::get('/transaksi/search', [TransaksiController::class, 'search'])->name('transaksi.search');
     Route::get('/payment/search', [PaymentController::class, 'search'])->name('payment.search');
-    Route::get('/pixel/search', [PixelController::class, 'search'])->name('pixel.search');
 
     // Filter
-    Route::get('/event/filter', [EventController::class, 'filter'])->name('event.filter');
     Route::get('/transaksi/filter', [TransaksiController::class, 'filter'])->name('transaksi.filter');
-
-    // Export
-    Route::post('/event/export', [EventController::class, 'export'])->name('event.export');
-    Route::post('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
 
     // Status Update
     Route::post('/transaksi/update', [TransaksiController::class, 'updateStatus'])->name('transaksi.update-status');
@@ -85,11 +90,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/payment/trashed', [PaymentController::class, 'trashed'])->name('payment.trashed');
     Route::post('/payment/{id}/restore', [PaymentController::class, 'restore'])->name('payment.restore');
     Route::delete('/payment/{id}/force-delete', [PaymentController::class, 'forceDelete'])->name('payment.forceDelete');
-
-    // Pixel - Soft Delete Management
-    Route::get('/pixel/trashed', [PixelController::class, 'trashed'])->name('pixel.trashed');
-    Route::post('/pixel/{id}/restore', [PixelController::class, 'restore'])->name('pixel.restore');
-    Route::delete('/pixel/{id}/force-delete', [PixelController::class, 'forceDelete'])->name('pixel.forceDelete');
 
     // Volunteer - Search & Export
     Route::get('/volunteer/search', [VolunteerController::class, 'search'])->name('volunteer.search');
@@ -127,7 +127,10 @@ Route::middleware('auth')->group(function () {
     Route::resource('/event', EventController::class);
     Route::resource('/transaksi', TransaksiController::class);
     Route::resource('/payment', PaymentController::class);
-    Route::resource('/pixel', PixelController::class);
     Route::resource('/voucher', VoucherController::class);
+    Route::resource('/fundraiser', FundraiserProgramController::class);
+
+    // Laporan UTM (tracking kampanye)
+    Route::get('/utm', [UtmReportController::class, 'index'])->name('utm.index');
     Route::resource('/volunteer', VolunteerController::class)->only(['index', 'destroy']);
 });

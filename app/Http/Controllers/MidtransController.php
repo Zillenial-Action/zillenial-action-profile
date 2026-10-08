@@ -113,6 +113,12 @@ class MidtransController extends Controller
                             return null;
                         }
 
+                        // Pembayaran telat: transaksi sudah di-expire/Failed dan stok tiket & kuota
+                        // voucher sudah dilepas. Ambil lagi supaya tiket tidak terjual dua kali.
+                        if ($fresh->status_pembayaran === 'Failed') {
+                            $this->reclaimReservationForLatePayment($fresh);
+                        }
+
                         $fresh->update([
                             'status_pembayaran' => 'Success',
                             'tanggal_pembayaran' => now(),
@@ -194,6 +200,26 @@ class MidtransController extends Controller
             ]);
 
             return response()->json(['message' => 'Failed to parse notification'], 400);
+        }
+    }
+
+    /**
+     * Uang sudah diterima Midtrans, jadi transaksi tetap harus jadi Success walau stok/kuota
+     * voucher sudah habis dipakai transaksi lain. Reservasi diambil lewat savepoint agar
+     * semua-atau-tidak-sama-sekali; jika gagal, catat untuk penanganan manual (refund/kursi tambahan).
+     */
+    private function reclaimReservationForLatePayment(Transaksi $transaksi): void
+    {
+        try {
+            DB::transaction(fn () => $this->checkoutService->reserveReservation($transaksi));
+        } catch (\Exception $e) {
+            Log::error('Midtrans: pembayaran telat untuk transaksi Failed, stok/kuota tidak cukup; perlu penanganan manual', [
+                'invoice'      => $transaksi->invoice,
+                'event_id'     => $transaksi->id_event,
+                'ticket_count' => $transaksi->jumlah_tiket,
+                'voucher_id'   => $transaksi->id_voucher,
+                'error'        => $e->getMessage(),
+            ]);
         }
     }
 

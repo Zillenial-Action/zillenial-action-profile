@@ -196,12 +196,4 @@ class Event extends Model
     {
         return $this->hasMany(KodeVoucher::class, 'id_event');
     }
-
-    /**
-     * Get the tracking pixels for the event.
-     */
-    public function pixels(): HasMany
-    {
-        return $this->hasMany(Pixel::class, 'id_event');
-    }
 }

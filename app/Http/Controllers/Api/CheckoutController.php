@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Services\CheckoutService;
+use App\Support\UtmData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -60,7 +61,10 @@ class CheckoutController extends Controller
                 $data['jumlah_tiket'],
                 $payment,
                 $data['pengunjung'],
-                $data['voucher_code'] ?? null
+                $data['voucher_code'] ?? null,
+                // Opsional: guest checkout tetap jalan tanpa token customer.
+                $request->user('customer')?->id,
+                UtmData::toAttributes($request->input('utm'))
             );
 
             return response()->json([

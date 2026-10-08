@@ -41,8 +41,8 @@
         fbq('init', '824012039961095');
         fbq('track', 'PageView');
 
-        // Menambahkan custom parameter
-        fbq('track', 'Purchase', {
+        // Invoice masih Pending; Purchase dikirim dari halaman payment-success setelah status Success
+        fbq('track', 'InitiateCheckout', {
             content_name: "{{ $data->event->name }}",
             content_type: 'product',
             currency: 'IDR',
@@ -84,11 +84,11 @@
             };
 
 
-            ttq.load('{id pixel}');
+            ttq.load('C4I4LTHCF95KKVVI6N7G');
             ttq.page();
 
             // Menambahkan parameter detail
-            ttq.track('CompletePayment', {
+            ttq.track('InitiateCheckout', {
                 content_id: "{{ $data->event->id }}",
                 content_name: "{{ $data->event->name }}",
                 value: "{{ $data->total_pembayaran }}",
@@ -271,7 +271,7 @@
 
             snap.pay('{{ $data->snap_token }}', {
                 onSuccess: function(result) {
-                    window.location.href = '/midtrans/finish/{{ $data->invoice }}';
+                    window.location.href = @json(route('midtrans.finish', array_filter(['invoice' => $data->invoice, 'token' => $data->public_token])));
                 },
                 onPending: function(result) {
                     btn.disabled = false;

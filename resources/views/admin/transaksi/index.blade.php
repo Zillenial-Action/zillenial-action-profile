@@ -307,6 +307,10 @@
                     }
 
                     alert(result.message);
+                } else if (response.status === 409) {
+                    // Status di server sudah berubah (mis. webhook lebih dulu): tampilkan data terbaru.
+                    alert(result.message);
+                    window.location.reload();
                 } else {
                     selectElement.value = previousValue;
                     selectElement.disabled = false;

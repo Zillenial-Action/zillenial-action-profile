@@ -4,14 +4,17 @@ namespace Tests\Feature;
 
 use App\Models\Event;
 use App\Models\Payment;
-use Illuminate\Support\Collection;
 use Tests\TestCase;
 
+/**
+ * Checkout portal memakai Midtrans Snap: PortalController mengirim satu metode Snap
+ * (atau null), channel pembayaran dipilih di dalam popup Snap, bukan di checkout.
+ */
 class CheckoutPaymentMethodTest extends TestCase
 {
-    public function test_checkout_shows_only_midtrans_payment_methods(): void
+    private function event(): Event
     {
-        $event = new Event([
+        return new Event([
             'id' => 10,
             'name' => 'Social Trip',
             'slug' => 'social-trip',
@@ -22,23 +25,19 @@ class CheckoutPaymentMethodTest extends TestCase
             'jumlah_tiket' => 10,
             'harga' => 150000,
         ]);
-        $manual = new Payment([
-            'name' => 'Transfer Manual',
-            'image' => 'assets/img/payment/manual.png',
-            'no_rek' => '1234567890',
-            'type' => 'manual',
-            'status' => true,
-        ]);
-        $manual->id = 1;
-        $midtrans = new Payment([
+    }
+
+    public function test_checkout_shows_single_midtrans_snap_option(): void
+    {
+        $event = $this->event();
+        $payment = new Payment([
             'name' => 'Midtrans',
             'image' => 'assets/img/payment/midtrans.png',
-            'no_rek' => 'MIDTRANS',
+            'no_rek' => '1234567890',
             'type' => 'midtrans',
             'status' => true,
         ]);
-        $midtrans->id = 2;
-        $payment = new Collection([$manual, $midtrans]);
+        $payment->id = 2;
 
         $this->withViewErrors([]);
 
@@ -47,9 +46,24 @@ class CheckoutPaymentMethodTest extends TestCase
         ]);
 
         $response->assertSee('Metode Pembayaran');
-        $response->assertSee('type="radio" name="payment" value="'.$midtrans->id.'"', false);
-        $response->assertDontSee('type="hidden" name="payment"', false);
-        $response->assertDontSee('Transfer Manual');
+        $response->assertSee('Bayar via Midtrans');
+        $response->assertDontSee('name="payment"', false);
         $response->assertDontSee('1234567890');
+        $response->assertDontSee('Metode pembayaran Midtrans belum tersedia');
+    }
+
+    public function test_checkout_warns_when_snap_payment_method_is_missing(): void
+    {
+        $event = $this->event();
+        $payment = null;
+
+        $this->withViewErrors([]);
+
+        $response = $this->view('portal.checkout', compact('event', 'payment') + [
+            'data' => $event,
+        ]);
+
+        $response->assertSee('Metode pembayaran Midtrans belum tersedia');
+        $response->assertDontSee('Bayar via Midtrans');
     }
 }

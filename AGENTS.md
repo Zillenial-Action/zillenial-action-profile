@@ -7,7 +7,7 @@ Panduan ini berlaku untuk semua pekerjaan di folder backend `zillenial-action-pr
 Backend ini adalah aplikasi Laravel 10 untuk Zillenial Action. Fokus utamanya adalah portal event dan ticketing, termasuk:
 
 - Portal publik untuk daftar event, detail event, checkout, invoice, dan tiket.
-- Admin panel untuk dashboard, event, transaksi, payment method, pixel tracking, voucher, soft delete, restore, dan export Excel.
+- Admin panel untuk dashboard, event, transaksi, payment method, voucher, soft delete, restore, dan export Excel.
 - Alur pembelian tiket berbasis invoice, data volunteer/pengunjung, validasi voucher, stok tiket, dan email tiket.
 - Integrasi view Blade backend dengan sibling frontend `zillenial-action-sostrip` hanya jika diminta eksplisit.
 
@@ -35,8 +35,8 @@ Jangan mengubah folder sibling `zillenial-action-sostrip` dari instruksi backend
 - Voucher harus valid terhadap event, status aktif, tanggal kadaluarsa, dan sisa kuota.
 - Saat transaksi menjadi `Success`, tiket email dikirim ke semua volunteer terkait. Jika ada email gagal, jangan diam-diam mengubah status menjadi sukses.
 - Saat transaksi `Failed` atau dihapus, pastikan implikasi stok tiket tetap benar.
-- `Payment`, `Pixel`, `Voucher`, `Event`, dan `Transaksi` memakai pola admin CRUD dengan soft delete/restore/force delete.
-- File gambar event/payment/pixel disimpan melalui service/pola yang sudah ada. Jangan bypass `ImageService` untuk upload event.
+- `Payment`, `Voucher`, `Event`, dan `Transaksi` memakai pola admin CRUD dengan soft delete/restore/force delete.
+- File gambar event/payment disimpan melalui service/pola yang sudah ada. Jangan bypass `ImageService` untuk upload event.
 - Cache yang sudah ada harus dihormati:
   - `homepage_events`
   - `active_payment_methods`

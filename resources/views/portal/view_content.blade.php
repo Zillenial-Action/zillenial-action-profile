@@ -80,7 +80,7 @@
             };
 
 
-            ttq.load('{id pixel}');
+            ttq.load('C4I4LTHCF95KKVVI6N7G');
             ttq.page();
 
             // Menambahkan parameter detail

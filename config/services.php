@@ -35,6 +35,18 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'customer_auth' => [
+        // Halaman frontend Sostrip yang menerima hasil login Google.
+        'frontend_url' => env('FRONTEND_URL', 'http://localhost:4321'),
+        'token_ttl_days' => (int) env('CUSTOMER_TOKEN_TTL_DAYS', 30),
+    ],
+
     'chatkebaikan' => [
         'base_url' => env('CHATKEBAIKAN_BASE_URL', 'https://chatkebaikan.raihmimpi.id'),
         'validate_path' => env('CHATKEBAIKAN_VALIDATE_PATH', '/api/dr/voucher/validate/{kode}'),

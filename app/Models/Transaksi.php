@@ -53,6 +53,7 @@ class Transaksi extends Model
         'invoice',
         'jumlah_tiket',
         'total_pembayaran',
+        'komisi_fundraiser',
         'name',
         'email',
         'telepon',
@@ -61,6 +62,11 @@ class Transaksi extends Model
         'tanggal_pembayaran',
         'id_payment',
         'id_voucher',
+        'id_customer',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'utm_data',
         'public_token',
         'snap_token',
         'payment_instructions',
@@ -87,9 +93,11 @@ class Transaksi extends Model
         'tanggal_pembayaran' => 'datetime',
         'jumlah_tiket' => 'integer',
         'total_pembayaran' => 'integer',
+        'komisi_fundraiser' => 'integer',
         'status_pembayaran' => 'string',
         'payment_instructions' => 'array',
         'pengunjung_data' => 'array',
+        'utm_data' => 'array',
     ];
 
     protected static function booted(): void
@@ -165,6 +173,14 @@ class Transaksi extends Model
     public function voucher(): BelongsTo
     {
         return $this->belongsTo(KodeVoucher::class, 'id_voucher');
+    }
+
+    /**
+     * Get the customer account that placed the transaction, if any.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'id_customer');
     }
 
     /**

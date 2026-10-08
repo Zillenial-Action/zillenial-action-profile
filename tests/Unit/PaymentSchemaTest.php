@@ -2,14 +2,22 @@
 
 namespace Tests\Unit;
 
+use App\Models\Payment;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class PaymentSchemaTest extends TestCase
 {
-    public function test_payment_account_number_is_nullable_in_base_migration(): void
-    {
-        $migration = file_get_contents(database_path('migrations/2024_10_29_023122_create_payments_table.php'));
+    use RefreshDatabase;
 
-        $this->assertStringContainsString("\$table->string('no_rek')->nullable();", $migration);
+    /**
+     * no_rek dibuat nullable oleh migration 2026_06_29_000001_make_no_rek_nullable_on_payments_table
+     * (metode Midtrans tidak punya nomor rekening). Cek hasil skemanya, bukan isi file migration.
+     */
+    public function test_payment_account_number_is_nullable(): void
+    {
+        $payment = Payment::factory()->create(['no_rek' => null, 'type' => 'midtrans']);
+
+        $this->assertNull($payment->fresh()->no_rek);
     }
 }

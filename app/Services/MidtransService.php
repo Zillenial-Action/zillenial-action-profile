@@ -54,10 +54,20 @@ class MidtransService
                     'name'     => 'Tiket '.($transaksi->event?->name ?? 'Event').' ('.$transaksi->jumlah_tiket.' tiket)',
                 ],
             ],
-            'callbacks' => [
-                'finish' => rtrim(config('midtrans.frontend_url', url('/')), '/') . '/payment/success?order_id=' . $transaksi->invoice,
-            ],
         ];
+
+        // FRONTEND_URL kosong menghasilkan '' (bukan null), jadi default config() tidak terpakai dan
+        // URL finish jadi relatif. Tanpa callbacks, Midtrans memakai Finish URL di dashboard.
+        $frontendUrl = rtrim((string) config('midtrans.frontend_url'), '/');
+        if ($frontendUrl !== '') {
+            $params['callbacks'] = [
+                'finish' => $frontendUrl . '/payment/success?order_id=' . rawurlencode($transaksi->invoice),
+            ];
+        } else {
+            Log::warning('FRONTEND_URL kosong; Snap memakai Finish URL dari dashboard Midtrans', [
+                'invoice' => $transaksi->invoice,
+            ]);
+        }
 
         $snapToken = Snap::getSnapToken($params);
 

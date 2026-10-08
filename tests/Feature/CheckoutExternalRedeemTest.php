@@ -31,7 +31,7 @@ class CheckoutExternalRedeemTest extends TestCase
         config(['services.chatkebaikan.redeem_url' => 'https://chatkebaikan.raihmimpi.id/api/dr/voucher/redeem']);
         Http::fake(['*redeem*' => Http::response(['ok' => true], 200)]);
 
-        $event = Event::factory()->create(['harga' => 200000, 'jumlah_tiket' => 10]);
+        $event = Event::factory()->create(['harga' => 200000, 'jumlah_tiket' => 10, 'status' => true]);
         $payment = Payment::factory()->create(['status' => true, 'type' => 'midtrans', 'no_rek' => 'MIDTRANS']);
         $voucher = KodeVoucher::factory()->external()->create([
             'id_event' => $event->id,
@@ -53,7 +53,7 @@ class CheckoutExternalRedeemTest extends TestCase
         config(['services.chatkebaikan.redeem_url' => 'https://chatkebaikan.raihmimpi.id/api/dr/voucher/redeem']);
         Http::fake(['*redeem*' => Http::response('', 500)]);
 
-        $event = Event::factory()->create(['harga' => 200000, 'jumlah_tiket' => 10]);
+        $event = Event::factory()->create(['harga' => 200000, 'jumlah_tiket' => 10, 'status' => true]);
         $payment = Payment::factory()->create(['status' => true, 'type' => 'midtrans', 'no_rek' => 'MIDTRANS']);
         $voucher = KodeVoucher::factory()->external()->create([
             'id_event' => $event->id,

@@ -40,6 +40,13 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Customer portal Sostrip: Bearer token saja, tanpa session/cookie,
+        // supaya tidak pernah bercampur dengan session login admin (guard web).
+        'customer' => [
+            'driver' => 'customer-token',
+            'provider' => 'customers',
+        ],
     ],
 
     /*
@@ -63,6 +70,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => App\Models\User::class,
+        ],
+
+        'customers' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Customer::class,
         ],
 
         // 'users' => [

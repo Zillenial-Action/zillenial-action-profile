@@ -17,6 +17,7 @@ class TransaksiStatusResource extends JsonResource
             'payment_channel'      => $this->payment?->midtrans_payment_type,
             'payment_instructions' => $this->payment_instructions,
             'event'             => $this->whenLoaded('event', fn () => [
+                'id'          => $this->event->id,
                 'name'        => $this->event->name,
                 'slug'        => $this->event->slug,
                 'waktu_mulai' => $this->event->waktu_mulai?->toIso8601String(),

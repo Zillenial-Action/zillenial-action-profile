@@ -100,4 +100,62 @@ class MidtransNotificationReleaseTest extends TestCase
         $this->assertSame(8, $event->fresh()->jumlah_tiket);
         Mail::assertQueued(SendTicket::class);
     }
+
+    public function test_late_settlement_on_failed_transaction_reclaims_stock_and_voucher_quota(): void
+    {
+        Mail::fake();
+
+        // Transaksi sudah di-expire: stok 10 & kuota voucher 0 sudah dikembalikan.
+        $event = Event::factory()->create(['jumlah_tiket' => 10, 'status' => true]);
+        $voucher = KodeVoucher::factory()->create([
+            'id_event' => $event->id,
+            'kuota' => 5,
+            'digunakan' => 0,
+        ]);
+        $transaksi = Transaksi::factory()->create([
+            'id_event' => $event->id,
+            'id_voucher' => $voucher->id,
+            'jumlah_tiket' => 2,
+            'status_pembayaran' => 'Failed',
+            'pengunjung_data' => [
+                ['name' => 'Budi', 'email' => 'budi@gmail.com', 'telepon' => '+6281234567890'],
+            ],
+        ]);
+
+        $this->notify($transaksi->invoice, 'settlement', '200', '100000.00')->assertStatus(200);
+
+        $this->assertSame('Success', $transaksi->fresh()->status_pembayaran);
+        $this->assertSame(8, $event->fresh()->jumlah_tiket, 'Stok tiket harus dipotong lagi.');
+        $this->assertSame(2, $voucher->fresh()->digunakan, 'Kuota voucher harus dipakai lagi.');
+        Mail::assertQueued(SendTicket::class);
+    }
+
+    public function test_late_settlement_without_stock_left_still_marks_success_without_partial_reclaim(): void
+    {
+        Mail::fake();
+
+        // Stok cukup, tapi kuota voucher sudah habis dipakai transaksi lain.
+        $event = Event::factory()->create(['jumlah_tiket' => 10, 'status' => true]);
+        $voucher = KodeVoucher::factory()->create([
+            'id_event' => $event->id,
+            'kuota' => 5,
+            'digunakan' => 5,
+        ]);
+        $transaksi = Transaksi::factory()->create([
+            'id_event' => $event->id,
+            'id_voucher' => $voucher->id,
+            'jumlah_tiket' => 2,
+            'status_pembayaran' => 'Failed',
+            'pengunjung_data' => [
+                ['name' => 'Budi', 'email' => 'budi@gmail.com', 'telepon' => '+6281234567890'],
+            ],
+        ]);
+
+        $this->notify($transaksi->invoice, 'settlement', '200', '100000.00')->assertStatus(200);
+
+        // Uang sudah masuk: tetap Success, tapi stok tidak terpotong sebagian (savepoint di-rollback).
+        $this->assertSame('Success', $transaksi->fresh()->status_pembayaran);
+        $this->assertSame(10, $event->fresh()->jumlah_tiket);
+        $this->assertSame(5, $voucher->fresh()->digunakan);
+    }
 }

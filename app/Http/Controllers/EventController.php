@@ -4,13 +4,11 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\Event;
-use App\Exports\EventExport;
 use App\Services\HtmlSanitizer;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
-use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use Illuminate\Http\Request;
@@ -275,48 +273,6 @@ class EventController extends Controller
             ]);
             return redirect()->route('event.trashed')->with('error', 'Gagal menghapus event permanen');
         }
-    }
-
-    /**
-     * Export events to Excel.
-     */
-    public function export(Request $request)
-    {
-        $filters = $request->only(['waktu_awal', 'waktu_akhir', 'mitra', 'status']);
-
-        Log::info('Event export requested', [
-            'user_id' => auth()->id(),
-            'filters' => $filters,
-        ]);
-
-        return Excel::download(new EventExport($filters), 'Event.xlsx');
-    }
-
-    /**
-     * Filter events.
-     */
-    public function filter(Request $request): View
-    {
-        $title = 'Filter Event';
-
-        $data = Event::query()
-            ->orderByDesc('created_at')
-            ->when($request->waktu_awal && $request->waktu_akhir, fn($q) => 
-                $q->whereDate('created_at', '>=', $request->waktu_awal)
-                  ->whereDate('created_at', '<=', $request->waktu_akhir)
-            )
-            ->when($request->waktu_awal && !$request->waktu_akhir, fn($q) => 
-                $q->whereDate('created_at', $request->waktu_awal)
-            )
-            ->when(isset($request->status), fn($q) => 
-                $q->where('status', $request->status)
-            )
-            ->when($request->mitra, fn($q) => 
-                $q->where('mitra', 'like', '%' . $request->mitra . '%')
-            )
-            ->paginate(5);
-
-        return view('admin.event.index', compact('title', 'data'));
     }
 
     /**

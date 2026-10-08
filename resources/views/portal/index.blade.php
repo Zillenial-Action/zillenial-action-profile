@@ -61,7 +61,7 @@
             };
 
 
-            ttq.load('C4I4LTHCF95KKVVI6N7G}');
+            ttq.load('C4I4LTHCF95KKVVI6N7G');
             ttq.page();
 
         }(window, document, 'ttq');

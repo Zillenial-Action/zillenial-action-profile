@@ -433,6 +433,8 @@
             ['url' => '/transaksi',    'label' => 'Transaksi',            'icon' => 'bi-receipt',               'active' => Request::is('transaksi*')],
             ['url' => '/payment',      'label' => 'Metode Pembayaran',    'icon' => 'bi-credit-card',           'active' => Request::is('payment*')],
             ['url' => '/voucher',      'label' => 'Kode Voucher',         'icon' => 'bi-ticket-perforated',     'active' => Request::is('voucher*')],
+            ['url' => '/fundraiser',   'label' => 'Fundraiser',           'icon' => 'bi-megaphone',             'active' => Request::is('fundraiser*')],
+            ['url' => '/utm',          'label' => 'Laporan UTM',          'icon' => 'bi-graph-up-arrow',        'active' => Request::is('utm*')],
             ['url' => '/volunteer',    'label' => 'Volunteer',            'icon' => 'bi-people',                'active' => Request::is('volunteer*')],
             ['url' => '/failed-email', 'label' => 'Email Tidak Terkirim', 'icon' => 'bi-envelope-exclamation', 'active' => Request::is('failed-email*')],
             ['url' => '/sent-email',   'label' => 'Email Tiket Terkirim', 'icon' => 'bi-envelope-check',       'active' => Request::is('sent-email*')],

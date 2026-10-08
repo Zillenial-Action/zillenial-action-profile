@@ -153,6 +153,41 @@
                             </div>
                         </div>
 
+                        <p class="mt-3"><strong class="h5 mt-4 pt-2">Sumber kunjungan (UTM).</strong></p>
+                        @php
+                            $utmTouches = array_filter([
+                                'UTM terakhir sebelum checkout' => $transaksi->utm_data['last'] ?? null,
+                                'UTM pertama kali datang' => $transaksi->utm_data['first'] ?? null,
+                            ]);
+                        @endphp
+                        @forelse ($utmTouches as $utmLabel => $touch)
+                            <div class="border border-secondary rounded p-3 mb-3">
+                                <p class="fw-semibold mb-2">{{ $utmLabel }}</p>
+                                <div class="row g-2 small">
+                                    @foreach ($touch['params'] ?? [] as $utmKey => $utmValue)
+                                        <div class="col-sm-6 col-lg-4">
+                                            <span class="text-muted">{{ $utmKey }}</span><br>
+                                            <span class="fw-semibold text-break">{{ $utmValue }}</span>
+                                        </div>
+                                    @endforeach
+                                    <div class="col-12">
+                                        <span class="text-muted">Landing page</span><br>
+                                        <span class="text-break">{{ $touch['landing_page'] ?? '-' }}</span>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <span class="text-muted">Referrer</span><br>
+                                        <span class="text-break">{{ $touch['referrer'] ?? '-' }}</span>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <span class="text-muted">Tercatat</span><br>
+                                        <span>{{ ! empty($touch['captured_at']) ? \Carbon\Carbon::parse($touch['captured_at'])->timezone(config('app.timezone'))->format('d-m-Y H:i') : '-' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-muted">Tidak ada UTM. Pembeli datang langsung atau dari tautan tanpa UTM.</p>
+                        @endforelse
+
                         <div class="d-flex flex-row-reverse bd-highlight justify-items-center">
                             <div class="p-2 bd-highlight h4">@rupiah($transaksi->total_pembayaran)</div>
                             <div class="p-2 bd-highlight"><strong>Total Pembayaran</strong></div>

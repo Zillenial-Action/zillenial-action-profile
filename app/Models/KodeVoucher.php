@@ -44,6 +44,8 @@ class KodeVoucher extends Model
      */
     protected $fillable = [
         'id_event',
+        'id_fundraiser_program',
+        'id_customer',
         'name_voucher',
         'kode',
         'nilai_diskon',
@@ -82,6 +84,22 @@ class KodeVoucher extends Model
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class, 'id_event');
+    }
+
+    /**
+     * Program fundraiser asal kode ini; null untuk voucher biasa.
+     */
+    public function fundraiserProgram(): BelongsTo
+    {
+        return $this->belongsTo(FundraiserProgram::class, 'id_fundraiser_program');
+    }
+
+    /**
+     * Fundraiser pemilik kode ini.
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'id_customer');
     }
 
     /**

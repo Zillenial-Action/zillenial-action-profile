@@ -12,6 +12,10 @@
                 <p class="page-subtitle mb-0">Pantau pembelian tiket & status pembayaran.</p>
             </div>
             <div class="d-flex gap-2">
+                <a href="{{ route('transaksi.export', request()->except('page')) }}" class="btn btn-outline-success"
+                    title="Export semua transaksi sesuai filter atau pencarian yang aktif">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Export Excel
+                </a>
                 <a href="{{ route('transaksi.trashed') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-trash3 me-1"></i>Terhapus
                 </a>

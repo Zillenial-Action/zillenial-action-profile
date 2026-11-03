@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
+use App\Exports\ExportTransaksi;
 use App\Models\Transaksi;
 use App\Models\Event;
 use App\Models\Payment;
@@ -17,8 +18,11 @@ use App\Http\Requests\UpdateTransaksiRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\View\View;
 use App\Mail\SendTicket;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Class TransaksiController
@@ -272,24 +276,10 @@ class TransaksiController extends Controller
         $payment = Payment::select(['id', 'name'])->get();
         $events  = Event::orderBy('name')->get(['id', 'name']);
 
-        $data = Transaksi::with(['event:id,name', 'payment:id,name', 'volunteers:id,name,telepon', 'voucher'])
-            ->orderByDesc('created_at')
-            ->when($request->tanggal_awal && $request->tanggal_akhir, fn($q) =>
-                $q->whereDate('tanggal_register', '>=', $request->tanggal_awal)
-                  ->whereDate('tanggal_register', '<=', $request->tanggal_akhir)
-            )
-            ->when($request->tanggal_awal && !$request->tanggal_akhir, fn($q) =>
-                $q->whereDate('tanggal_register', $request->tanggal_awal)
-            )
-            ->when($request->id_event, fn($q) =>
-                $q->where('id_event', $request->id_event)
-            )
-            ->when($request->status_pembayaran, fn($q) =>
-                $q->where('status_pembayaran', $request->status_pembayaran)
-            )
-            ->when($request->id_payment, fn($q) =>
-                $q->where('id_payment', $request->id_payment)
-            )
+        $query = Transaksi::with(['event:id,name', 'payment:id,name', 'volunteers:id,name,telepon', 'voucher'])
+            ->orderByDesc('created_at');
+
+        $data = $this->applyFilters($query, $request)
             ->paginate(15)
             ->appends($request->only(['tanggal_awal', 'tanggal_akhir', 'id_event', 'status_pembayaran', 'id_payment']));
 
@@ -305,24 +295,67 @@ class TransaksiController extends Controller
         $payment = Payment::select(['id', 'name'])->get();
         $events  = Event::orderBy('name')->get(['id', 'name']);
 
-        $data = Transaksi::with(['event:id,name', 'payment:id,name', 'volunteers:id,name,telepon', 'voucher'])
-            ->orderByDesc('created_at')
-            ->when($request->search, fn($q) =>
-                $q->where(fn($query) =>
-                    $query->where('id', 'like', '%' . $request->search . '%')
-                          ->orWhere('invoice', 'like', '%' . $request->search . '%')
-                          ->orWhere('name', 'like', '%' . $request->search . '%')
-                          ->orWhere('telepon', 'like', '%' . $request->search . '%')
-                          ->orWhere('email', 'like', '%' . $request->search . '%')
-                          ->orWhereHas('event', fn($eq) =>
-                              $eq->where('name', 'like', '%' . $request->search . '%')
-                          )
-                )
-            )
+        $query = Transaksi::with(['event:id,name', 'payment:id,name', 'volunteers:id,name,telepon', 'voucher'])
+            ->orderByDesc('created_at');
+
+        $data = $this->applySearch($query, $request)
             ->paginate(15)
             ->appends($request->only(['search']));
 
         return view('admin.transaksi.index', compact('title', 'data', 'payment', 'events'));
+    }
+
+    /**
+     * Export transaksi ke Excel, mengikuti filter/pencarian yang sedang aktif di halaman.
+     */
+    public function export(Request $request): BinaryFileResponse
+    {
+        $query = $this->applySearch($this->applyFilters(Transaksi::query(), $request), $request);
+
+        Log::info('Transaction export requested', [
+            'filters'    => $request->only(['tanggal_awal', 'tanggal_akhir', 'id_event', 'status_pembayaran', 'id_payment']),
+            'has_search' => $request->filled('search'),
+            'user_id'    => auth()->id(),
+        ]);
+
+        return Excel::download(new ExportTransaksi($query), 'Transaksi-' . now()->format('Ymd-His') . '.xlsx');
+    }
+
+    private function applyFilters(Builder $query, Request $request): Builder
+    {
+        return $query
+            ->when($request->tanggal_awal && $request->tanggal_akhir, fn($q) =>
+                $q->whereDate('tanggal_register', '>=', $request->tanggal_awal)
+                  ->whereDate('tanggal_register', '<=', $request->tanggal_akhir)
+            )
+            ->when($request->tanggal_awal && !$request->tanggal_akhir, fn($q) =>
+                $q->whereDate('tanggal_register', $request->tanggal_awal)
+            )
+            ->when($request->id_event, fn($q) =>
+                $q->where('id_event', $request->id_event)
+            )
+            ->when($request->status_pembayaran, fn($q) =>
+                $q->where('status_pembayaran', $request->status_pembayaran)
+            )
+            ->when($request->id_payment, fn($q) =>
+                $q->where('id_payment', $request->id_payment)
+            );
+    }
+
+    private function applySearch(Builder $query, Request $request): Builder
+    {
+        return $query->when($request->search, fn($q) =>
+            $q->where(fn($query) =>
+                $query->where('id', 'like', '%' . $request->search . '%')
+                      ->orWhere('invoice', 'like', '%' . $request->search . '%')
+                      ->orWhere('name', 'like', '%' . $request->search . '%')
+                      ->orWhere('telepon', 'like', '%' . $request->search . '%')
+                      ->orWhere('email', 'like', '%' . $request->search . '%')
+                      ->orWhereHas('event', fn($eq) =>
+                          $eq->where('name', 'like', '%' . $request->search . '%')
+                      )
+            )
+        );
     }
 
     /**

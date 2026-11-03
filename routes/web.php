@@ -71,6 +71,9 @@ Route::middleware('auth')->group(function () {
     // Filter
     Route::get('/transaksi/filter', [TransaksiController::class, 'filter'])->name('transaksi.filter');
 
+    // Export
+    Route::get('/transaksi/export', [TransaksiController::class, 'export'])->name('transaksi.export');
+
     // Status Update
     Route::post('/transaksi/update', [TransaksiController::class, 'updateStatus'])->name('transaksi.update-status');
     Route::post('/transaksi/{transaksi}/kirim-email', [TransaksiController::class, 'sendTicketEmail'])->name('transaksi.send-email');

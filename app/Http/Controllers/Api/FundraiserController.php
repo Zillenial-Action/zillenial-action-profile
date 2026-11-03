@@ -121,8 +121,9 @@ class FundraiserController extends Controller
             ] : null,
             'kode' => $kode ? [
                 'kode' => $kode->kode,
-                'kuota' => $kode->kuota,
-                'digunakan' => $kode->digunakan,
+                'kuota' => (int) $kode->kuota,
+                // Kode yang baru dibuat belum memuat default DB, jadi digunakan masih null.
+                'digunakan' => (int) $kode->digunakan,
                 'tiket_terjual' => (int) ($stat->tiket_terjual ?? 0),
                 'komisi_didapat' => (int) ($stat->komisi_didapat ?? 0),
                 'komisi_pending' => (int) ($stat->komisi_pending ?? 0),

@@ -50,7 +50,7 @@ class FundraiserTest extends TestCase
     {
         $pengunjung = [];
         for ($i = 0; $i < $tiket; $i++) {
-            $pengunjung[] = ['name' => 'Budi Santoso', 'telepon' => '81234567890', 'email' => $i === 0 ? $email : "teman{$i}@gmail.com"];
+            $pengunjung[] = ['name' => 'Budi Santoso', 'telepon' => '81234567890', 'email' => $i === 0 ? $email : "teman{$i}@gmail.com", 'domisili' => 'Bandung'];
         }
 
         return $this->postJson('/api/checkout', [

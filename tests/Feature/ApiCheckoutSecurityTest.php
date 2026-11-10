@@ -20,7 +20,7 @@ class ApiCheckoutSecurityTest extends TestCase
             'jumlah_tiket' => 1,
             'payment_method_id' => $payment->id,
             'pengunjung' => [
-                ['name' => 'Budi Santoso', 'telepon' => '81234567890', 'email' => 'budi@gmail.com'],
+                ['name' => 'Budi Santoso', 'telepon' => '81234567890', 'email' => 'budi@gmail.com', 'domisili' => 'Bandung'],
             ],
         ], $overrides);
     }

@@ -296,7 +296,34 @@
             margin-left: 25px
         }
 
-        .terms-conditions li::before {
+        .terms-conditions ol {
+            margin: 0;
+            padding-left: 25px;
+        }
+
+        .terms-conditions ol li {
+            padding-left: 5px;
+            margin-left: 25px;
+        }
+
+        .terms-conditions p,
+        .terms-conditions blockquote {
+            font-size: 0.95em;
+            color: #555;
+            margin: 0 0 10px;
+        }
+
+        .terms-conditions h3,
+        .terms-conditions h4 {
+            margin: 15px 0 8px;
+            color: #333;
+        }
+
+        .terms-conditions a {
+            color: #5a2d67;
+        }
+
+        .terms-conditions ul li::before {
             content: '•';
             color: #5a2d67;
             font-weight: bold;
@@ -545,11 +572,12 @@
     </style>
 </head>
 
+@inject('ticketSettings', 'App\Services\TicketSettings')
 <body>
     <div class="container">
         <header class="header">
             <div class="logo">
-                <img src="{{ asset('assets/img/Logo-ZA.png') }}" alt="Loket Logo">
+                <img src="{{ asset('assets/img/Logo-ZA.png') }}" alt="Zillenial Action">
             </div>
             <div class="e-voucher">
                 E-Voucher
@@ -571,7 +599,7 @@
                             <path fill-rule="evenodd"
                                 d="M4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999zm2.493 8.574a.5.5 0 0 1-.411.575c-.712.118-1.28.295-1.655.493a1.3 1.3 0 0 0-.37.265.3.3 0 0 0-.057.09V14l.002.008.016.033a.6.6 0 0 0 .145.15c.165.13.435.27.813.395.751.25 1.82.414 3.024.414s2.273-.163 3.024-.414c.378-.126.648-.265.813-.395a.6.6 0 0 0 .146-.15l.015-.033L12 14v-.004a.3.3 0 0 0-.057-.09 1.3 1.3 0 0 0-.37-.264c-.376-.198-.943-.375-1.655-.493a.5.5 0 1 1 .164-.986c.77.127 1.452.328 1.957.594C12.5 13 13 13.4 13 14c0 .426-.26.752-.544.977-.29.228-.68.413-1.116.558-.878.293-2.059.465-3.34.465s-2.462-.172-3.34-.465c-.436-.145-.826-.33-1.116-.558C3.26 14.752 3 14.426 3 14c0-.599.5-1 .961-1.243.505-.266 1.187-.467 1.957-.594a.5.5 0 0 1 .575.411" />
                         </svg>
-                        <span style="margin-left: 5px">Loket Headquarter</span>
+                        <span style="margin-left: 5px">{{ $transaksi->event->kota ?: '-' }}</span>
                     </div>
                     <div class="detail-item">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
@@ -650,39 +678,41 @@
             </div>
         </section>
 
+        @php($ticketTerms = $ticketSettings->termsFor($transaksi->event))
+        @if (filled(strip_tags((string) $ticketTerms)))
         <section class="terms-conditions">
             <h2>Syarat dan Ketentuan / Terms & Conditions</h2>
-            <ul>
-                <li>Mengisi formulir pendaftaran</li>
-                <li>Memberikan kontribusi sesuai yang tertera (sudah termasuk bantuan untuk penerima manfaat)</li>
-                <li>Tiket yang sudah dibeli tidak dapat dibatalkan</li>
-                <li>Bersedia mengikuti aturan yang berlaku selama kegiatan Zillenial Action berlangsung</li>
-                <li>Menjadi inspirasi kebaikan dengan membagikan pengalaman menjadi Sobat Zigi lewat media sosial yang
-                    kamu miliki dan di kolaborasikan dengan akun instagram @zillenialaction</li>
-            </ul>
+            {{-- Disanitasi saat disimpan (HtmlSanitizer::sanitizeText). --}}
+            {!! $ticketTerms !!}
         </section>
+        @endif
 
         <footer class="footer">
             <div class="footer-contact">
-                <img src="{{ asset('assets/img/Logo-ZA.png') }}" alt="Loket Logo" class="footer-logo"
+                <img src="{{ asset('assets/img/Logo-ZA.png') }}" alt="Zillenial Action" class="footer-logo"
                     style="margin-right: 10px">
-                <a href="https://wa.me/6282121392363" class="contact-item">
+                @if ($ticketSettings->whatsappLink())
+                <a href="{{ $ticketSettings->whatsappLink() }}" class="contact-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                         class="bi bi-whatsapp" viewBox="0 0 16 16">
                         <path
                             d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.73.73 0 0 0-.529.247c-.182.198-.691.677-.691 1.654s.71 1.916.81 2.049c.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232" />
                     </svg>
-                    <span style="margin-left: 5px">+6282121392363</span>
+                    <span style="margin-left: 5px">{{ $ticketSettings->whatsappLabel() }}</span>
                 </a>
-                <a href="https://zillenialaction.id" class="contact-item">
+                @endif
+                @if ($ticketSettings->get('ticket_contact_website'))
+                <a href="{{ $ticketSettings->get('ticket_contact_website') }}" class="contact-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                         class="bi bi-globe" viewBox="0 0 16 16">
                         <path
                             d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m7.5-6.923c-.67.204-1.335.82-1.887 1.855A8 8 0 0 0 5.145 4H7.5zM4.09 4a9.3 9.3 0 0 1 .64-1.539 7 7 0 0 1 .597-.933A7.03 7.03 0 0 0 2.255 4zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a7 7 0 0 0-.656 2.5zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5zM8.5 5v2.5h2.99a12.5 12.5 0 0 0-.337-2.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5zM5.145 12q.208.58.468 1.068c.552 1.035 1.218 1.65 1.887 1.855V12zm.182 2.472a7 7 0 0 1-.597-.933A9.3 9.3 0 0 1 4.09 12H2.255a7 7 0 0 0 3.072 2.472M3.82 11a13.7 13.7 0 0 1-.312-2.5h-2.49c.062.89.291 1.733.656 2.5zm6.853 3.472A7 7 0 0 0 13.745 12H11.91a9.3 9.3 0 0 1-.64 1.539 7 7 0 0 1-.597.933M8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855q.26-.487.468-1.068zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.7 13.7 0 0 1-.312 2.5m2.802-3.5a7 7 0 0 0-.656-2.5H12.18c.174.782.282 1.623.312 2.5zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7 7 0 0 0-3.072-2.472c.218.284.418.598.597.933M10.855 4a8 8 0 0 0-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4z" />
                     </svg>
-                    <span style="margin-left: 5px">www.zillenialaction.id</span>
+                    <span style="margin-left: 5px">{{ $ticketSettings->websiteLabel() }}</span>
                 </a>
-                <a href="mailto:zillenialaction@gmail.com" class="contact-item">
+                @endif
+                @if ($ticketSettings->get('ticket_contact_email'))
+                <a href="mailto:{{ $ticketSettings->get('ticket_contact_email') }}" class="contact-item">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                         class="bi bi-envelope-at-fill" viewBox="0 0 16 16">
                         <path
@@ -690,8 +720,9 @@
                         <path
                             d="M15.834 12.244c0 1.168-.577 2.025-1.587 2.025-.503 0-1.002-.228-1.12-.648h-.043c-.118.416-.543.643-1.015.643-.77 0-1.259-.542-1.259-1.434v-.529c0-.844.481-1.4 1.26-1.4.585 0 .87.333.953.63h.03v-.568h.905v2.19c0 .272.18.42.411.42.315 0 .639-.415.639-1.39v-.118c0-1.277-.95-2.326-2.484-2.326h-.04c-1.582 0-2.64 1.067-2.64 2.724v.157c0 1.867 1.237 2.654 2.57 2.654h.045c.507 0 .935-.07 1.18-.18v.731c-.219.1-.643.175-1.237.175h-.044C10.438 16 9 14.82 9 12.646v-.214C9 10.36 10.421 9 12.485 9h.035c2.12 0 3.314 1.43 3.314 3.034zm-4.04.21v.227c0 .586.227.8.581.8.31 0 .564-.17.564-.743v-.367c0-.516-.275-.708-.572-.708-.346 0-.573.245-.573.791" />
                     </svg>
-                    <span style="margin-left: 5px">zillenialaction@gmail.com</span>
+                    <span style="margin-left: 5px">{{ $ticketSettings->get('ticket_contact_email') }}</span>
                 </a>
+                @endif
             </div>
         </footer>
     </div>

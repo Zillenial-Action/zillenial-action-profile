@@ -82,6 +82,14 @@
                                 @endif
                             </li>
                             <li class="list-group-item">
+                                Baju untuk volunteer :
+                                @if ($event->ada_baju)
+                                    <span class="badge bg-success">Ada</span>
+                                @else
+                                    <span class="badge bg-secondary">Tidak ada</span>
+                                @endif
+                            </li>
+                            <li class="list-group-item">
                                 <strong>Yang Kamu Dapat</strong>
                                 @if (!empty($event->benefits))
                                     <ul class="mb-0 mt-2">
@@ -111,6 +119,15 @@
                             </li>
                             <li class="list-group-item">
                                 {!! $event->deskripsi !!}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Syarat &amp; Ketentuan di Tiket</strong>
+                                @if (filled(strip_tags((string) $event->syarat_tiket)))
+                                    <div class="mt-2">{!! $event->syarat_tiket !!}</div>
+                                @else
+                                    <div class="text-muted mt-2">Memakai S&amp;K default dari
+                                        <a href="{{ route('ticket-setting.edit') }}">Pengaturan Tiket</a>.</div>
+                                @endif
                             </li>
                         </ul>
                         {{-- <div class="card-body">

@@ -138,6 +138,7 @@
                                 <th>Status Pembayaran</th>
                                 <th>Tanggal Pembayaran</th>
                                 <th>Metode Pembayaran</th>
+                                <th>Sumber (UTM)</th>
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
@@ -190,6 +191,21 @@
                                         @endif
                                     </td>
                                     <td>{{ $item->payment->name ?? '-' }}</td>
+                                    <td>
+                                        {{-- Last touch sebelum checkout; detail first touch, landing page & referrer ada di halaman detail. --}}
+                                        @if ($item->utm_source || $item->utm_medium || $item->utm_campaign)
+                                            <span class="badge bg-light text-dark border">{{ $item->utm_source ?: '(tanpa source)' }}</span>
+                                            @if ($item->utm_medium)
+                                                <span class="text-muted small">/ {{ $item->utm_medium }}</span>
+                                            @endif
+                                            @if ($item->utm_campaign)
+                                                <div class="small text-muted text-truncate" style="max-width: 220px;"
+                                                    title="{{ $item->utm_campaign }}">{{ $item->utm_campaign }}</div>
+                                            @endif
+                                        @else
+                                            <span class="text-muted small">Tanpa UTM</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end">
                                         <div class="d-inline-flex gap-1">
                                             <a href="{{ route('transaksi.show', $item->invoice) }}"
@@ -214,7 +230,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="16" class="text-center text-muted py-4">Belum ada transaksi.</td>
+                                    <td colspan="17" class="text-center text-muted py-4">Belum ada transaksi.</td>
                                 </tr>
                             @endforelse
                         </tbody>

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------- Stage 1: PHP dependencies ----------
-FROM php:8.3-cli-bookworm AS vendor
+FROM php:8.3.36-cli-bookworm AS vendor
 COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/bin/
 RUN install-php-extensions gd zip mbstring pdo_mysql bcmath
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -25,7 +25,7 @@ COPY . .
 RUN npm run build
 
 # ---------- Stage 3: application runtime ----------
-FROM php:8.3-fpm-bookworm AS app
+FROM php:8.3.36-fpm-bookworm AS app
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends nginx \

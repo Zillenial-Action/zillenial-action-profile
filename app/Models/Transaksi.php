@@ -189,6 +189,7 @@ class Transaksi extends Model
     public function volunteers(): BelongsToMany
     {
         return $this->belongsToMany(Volunteer::class, 'transaksi_volunteers', 'id_transaksi', 'id_volunteer')
+            ->withPivot('ukuran_baju')
             ->withTimestamps();
     }
 }

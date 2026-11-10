@@ -9,6 +9,7 @@ use App\Http\Controllers\FailedEmailController;
 use App\Http\Controllers\FundraiserProgramController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\SentEmailController;
+use App\Http\Controllers\TicketSettingController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\UtmReportController;
 use App\Http\Controllers\PaymentController;
@@ -123,6 +124,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sent-email', [SentEmailController::class, 'index'])->name('sent-email.index');
     Route::delete('/sent-email/clear-all', [SentEmailController::class, 'clearAll'])->name('sent-email.clearAll');
     Route::delete('/sent-email/{id}', [SentEmailController::class, 'destroy'])->name('sent-email.destroy');
+
+    // Pengaturan Tiket (S&K default, pesan email, kontak footer)
+    Route::get('/ticket-setting', [TicketSettingController::class, 'edit'])->name('ticket-setting.edit');
+    Route::put('/ticket-setting', [TicketSettingController::class, 'update'])->name('ticket-setting.update');
 
     // Error Log
     Route::get('/error-log', [ErrorLogController::class, 'index'])->name('error-log.index');

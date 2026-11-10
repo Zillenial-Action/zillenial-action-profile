@@ -109,13 +109,34 @@
                                 </div>
                             </div>
 
+                            {{-- Baju --}}
+                            <div class="mb-3">
+                                <input type="hidden" name="ada_baju" value="0">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="ada_baju"
+                                        name="ada_baju" value="1" @checked(old('ada_baju', $event->ada_baju))>
+                                    <label class="form-check-label fw-semibold" for="ada_baju">Event ini menyediakan baju</label>
+                                </div>
+                                <small class="text-muted">Jika aktif, volunteer wajib memilih ukuran baju (S&ndash;XXXL) saat checkout.</small>
+                            </div>
+
                             {{-- Description --}}
                             <div class="mb-3">
                                 <label for="deskripsi" class="form-label fw-semibold">
                                     Deskripsi & Syarat Ketentuan <span class="text-danger">*</span>
                                 </label>
-                                <div id="editor" data-upload-url="{{ route('event.description-image') }}">{!! app(\App\Services\HtmlSanitizer::class)->sanitize(old('deskripsi', $event->deskripsi)) !!}</div>
-                                <input type="hidden" name="deskripsi" id="content">
+                                <div data-rich-editor data-target="deskripsi" data-placeholder="Tulis deskripsi event..." data-upload-url="{{ route('event.description-image') }}">{!! app(\App\Services\HtmlSanitizer::class)->sanitize(old('deskripsi', $event->deskripsi)) !!}</div>
+                                <input type="hidden" name="deskripsi" id="deskripsi">
+                            </div>
+
+                            {{-- Syarat & Ketentuan Tiket --}}
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Syarat &amp; Ketentuan di Tiket</label>
+                                <div data-rich-editor data-target="syarat_tiket"
+                                    data-placeholder="Kosongkan untuk memakai S&amp;K default dari menu Pengaturan Tiket">{!! app(\App\Services\HtmlSanitizer::class)->sanitizeText(old('syarat_tiket', $event->syarat_tiket)) !!}</div>
+                                <input type="hidden" name="syarat_tiket" id="syarat_tiket">
+                                <small class="text-muted">Tampil di tiket peserta yang sudah membayar. Jika kosong, tiket memakai S&amp;K default dari
+                                    <a href="{{ route('ticket-setting.edit') }}" target="_blank">Pengaturan Tiket</a>.</small>
                             </div>
 
                             @include('admin.event.partials.benefit-fields', ['event' => $event])

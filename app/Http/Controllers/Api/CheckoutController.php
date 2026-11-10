@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Payment;
+use App\Models\Volunteer;
 use App\Services\CheckoutService;
 use App\Support\UtmData;
 use Illuminate\Http\JsonResponse;
@@ -19,6 +20,9 @@ class CheckoutController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        // Ukuran baju hanya diminta untuk event yang menyediakan baju.
+        $adaBaju = (bool) Event::where('slug', (string) $request->input('event_slug'))->value('ada_baju');
+
         $data = $request->validate([
             'event_slug'           => 'required|string|exists:events,slug',
             'jumlah_tiket'         => 'required|integer|min:1|max:3',
@@ -31,6 +35,10 @@ class CheckoutController extends Controller
             'pengunjung.*.telepon' => ['required', 'string', 'min:9', 'max:13', 'regex:/^[0-9]+$/'],
             'pengunjung.*.email'   => ['required', 'email:rfc,dns', 'max:255'],
             'pengunjung.*.jenis_kelamin' => ['nullable', 'string', 'in:Laki-laki,Perempuan'],
+            'pengunjung.*.domisili' => ['required', 'string', 'min:2', 'max:100'],
+            'pengunjung.*.ukuran_baju' => $adaBaju
+                ? ['required', 'string', Rule::in(Volunteer::UKURAN_BAJU)]
+                : ['nullable'],
         ], [
             'pengunjung.*.name.required'    => 'Nama wajib diisi.',
             'pengunjung.*.name.min'         => 'Nama minimal 3 karakter.',
@@ -41,8 +49,22 @@ class CheckoutController extends Controller
             'pengunjung.*.telepon.regex'    => 'Nomor ponsel hanya boleh berisi angka.',
             'pengunjung.*.email.required'   => 'Email wajib diisi.',
             'pengunjung.*.email.email'      => 'Format email tidak valid.',
+            'pengunjung.*.domisili.required' => 'Domisili wajib diisi.',
+            'pengunjung.*.domisili.min'     => 'Domisili minimal 2 karakter.',
+            'pengunjung.*.domisili.max'     => 'Domisili maksimal 100 karakter.',
+            'pengunjung.*.ukuran_baju.required' => 'Ukuran baju wajib dipilih.',
+            'pengunjung.*.ukuran_baju.in'   => 'Ukuran baju tidak valid.',
             'payment_method_id.exists'      => 'Metode pembayaran tidak tersedia.',
         ]);
+
+        $data['pengunjung'] = array_map(function (array $p) use ($adaBaju) {
+            $p['domisili'] = trim($p['domisili']);
+            if (! $adaBaju) {
+                unset($p['ukuran_baju']);
+            }
+
+            return $p;
+        }, $data['pengunjung']);
 
         if (count($data['pengunjung']) !== (int) $data['jumlah_tiket']) {
             throw ValidationException::withMessages([

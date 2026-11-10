@@ -19,7 +19,7 @@ class CheckoutService
      * Proses checkout: potong stok, buat transaksi, attach volunteer, redeem voucher, buat snap token.
      * Total pembayaran dihitung server-side; jangan percaya nilai dari client.
      *
-     * @param  array<int, array{name: string, email: string, telepon: string, jenis_kelamin?: string}>  $pengunjung
+     * @param  array<int, array{name: string, email: string, telepon: string, jenis_kelamin?: string, domisili?: string, ukuran_baju?: string}>  $pengunjung
      * @param  array<string, mixed>  $tracking  Atribut UTM dari UtmData::toAttributes().
      * @throws \Exception
      */
@@ -193,12 +193,26 @@ class CheckoutService
                     'name'          => $p['name'],
                     'telepon'       => $p['telepon'],
                     'jenis_kelamin' => $p['jenis_kelamin'] ?? null,
+                    'domisili'      => $p['domisili'] ?? null,
                 ]
             );
-            if (! $volunteer->wasRecentlyCreated && empty($volunteer->jenis_kelamin) && ! empty($p['jenis_kelamin'])) {
-                $volunteer->update(['jenis_kelamin' => $p['jenis_kelamin']]);
+            if (! $volunteer->wasRecentlyCreated) {
+                $updates = [];
+                if (empty($volunteer->jenis_kelamin) && ! empty($p['jenis_kelamin'])) {
+                    $updates['jenis_kelamin'] = $p['jenis_kelamin'];
+                }
+                // Domisili bisa berubah (pindah kota), jadi selalu pakai isian terbaru.
+                if (! empty($p['domisili']) && $volunteer->domisili !== $p['domisili']) {
+                    $updates['domisili'] = $p['domisili'];
+                }
+                if ($updates) {
+                    $volunteer->update($updates);
+                }
             }
-            $transaksi->volunteers()->syncWithoutDetaching([$volunteer->id]);
+            // Ukuran baju per event, jadi disimpan di pivot transaksi-volunteer.
+            $transaksi->volunteers()->syncWithoutDetaching([
+                $volunteer->id => ['ukuran_baju' => $p['ukuran_baju'] ?? null],
+            ]);
             $volunteers->push($volunteer);
         }
 

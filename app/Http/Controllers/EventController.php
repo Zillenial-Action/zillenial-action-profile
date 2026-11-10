@@ -369,12 +369,21 @@ class EventController extends Controller
             ->values()
             ->all();
 
+        // Checkbox yang tidak dicentang tidak terkirim, jadi default-nya false.
+        $data['ada_baju'] = (bool) ($data['ada_baju'] ?? false);
+
         $data['direction'] = isset($data['direction']) && trim((string) $data['direction']) !== ''
             ? trim((string) $data['direction'])
             : null;
 
         if (array_key_exists('deskripsi', $data)) {
             $data['deskripsi'] = $this->htmlSanitizer->sanitize($data['deskripsi'] ?? null);
+        }
+
+        if (array_key_exists('syarat_tiket', $data)) {
+            $terms = $this->htmlSanitizer->sanitizeText($data['syarat_tiket'] ?? null);
+            // Editor kosong (mis. "<p><br></p>") disimpan null agar tiket memakai S&K default.
+            $data['syarat_tiket'] = trim(strip_tags((string) $terms)) === '' ? null : $terms;
         }
 
         return $data;

@@ -20,8 +20,10 @@ use Illuminate\Support\Str;
  * @property string|null $mitra
  * @property string|null $website
  * @property string|null $deskripsi
+ * @property string|null $syarat_tiket
  * @property array<int, string>|null $benefits
  * @property array<int, array<string, string>>|null $agenda
+ * @property bool $ada_baju
  * @property bool $status
  * @property \Carbon\Carbon $waktu_mulai
  * @property \Carbon\Carbon $waktu_berakhir
@@ -53,8 +55,10 @@ class Event extends Model
         'mitra',
         'website',
         'deskripsi',
+        'syarat_tiket',
         'benefits',
         'agenda',
+        'ada_baju',
         'status',
         'waktu_mulai',
         'waktu_berakhir',
@@ -89,6 +93,7 @@ class Event extends Model
         'harga' => 'integer',
         'benefits' => 'array',
         'agenda' => 'array',
+        'ada_baju' => 'boolean',
     ];
 
     /**

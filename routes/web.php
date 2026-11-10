@@ -78,6 +78,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/transaksi/update', [TransaksiController::class, 'updateStatus'])->name('transaksi.update-status');
     Route::post('/transaksi/{transaksi}/kirim-email', [TransaksiController::class, 'sendTicketEmail'])->name('transaksi.send-email');
     Route::put('/event/update-status/{event}', [EventController::class, 'updateStatus'])->name('event.update.status');
+    Route::post('/event/description-image', [EventController::class, 'uploadDescriptionImage'])
+        ->middleware('throttle:30,1')
+        ->name('event.description-image');
 
     // Event - Soft Delete Management
     Route::get('/event/trashed', [EventController::class, 'trashed'])->name('event.trashed');

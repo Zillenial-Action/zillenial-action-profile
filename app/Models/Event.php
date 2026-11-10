@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DescriptionImageService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -108,6 +109,23 @@ class Event extends Model
             if ($event->isDirty('name') && !$event->isDirty('slug')) {
                 $event->slug = $event->generateUniqueSlug($event->name, $event->id);
             }
+        });
+
+        // Gambar yang dihapus dari deskripsi ikut dihapus dari disk.
+        static::updated(function (Event $event) {
+            if ($event->wasChanged('deskripsi')) {
+                app(DescriptionImageService::class)->deleteRemoved(
+                    $event->getOriginal('deskripsi'),
+                    $event->deskripsi,
+                    $event->id
+                );
+            }
+        });
+
+        // Soft delete sengaja tidak menghapus gambar agar event masih bisa di-restore utuh.
+        static::forceDeleted(function (Event $event) {
+            $service = app(DescriptionImageService::class);
+            $service->deleteIfUnreferenced($service->extractPaths($event->deskripsi), $event->id);
         });
     }
 

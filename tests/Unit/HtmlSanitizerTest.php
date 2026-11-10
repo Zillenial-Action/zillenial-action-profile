@@ -30,4 +30,15 @@ class HtmlSanitizerTest extends TestCase
         $this->assertStringContainsString('<li>Benefit</li>', $sanitized);
         $this->assertStringContainsString('href="https://example.com"', $sanitized);
     }
+
+    public function test_sanitizer_keeps_http_images_and_drops_data_uri_images(): void
+    {
+        $sanitized = app(HtmlSanitizer::class)->sanitize(
+            '<p><img src="https://example.com/image/event/description/foto.jpg" alt="Foto"></p>'
+            . '<p><img src="data:image/png;base64,AAAA"></p>'
+        );
+
+        $this->assertStringContainsString('src="https://example.com/image/event/description/foto.jpg"', $sanitized);
+        $this->assertStringNotContainsString('data:image', $sanitized);
+    }
 }

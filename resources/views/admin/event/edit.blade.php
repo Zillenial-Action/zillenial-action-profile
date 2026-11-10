@@ -114,7 +114,7 @@
                                 <label for="deskripsi" class="form-label fw-semibold">
                                     Deskripsi & Syarat Ketentuan <span class="text-danger">*</span>
                                 </label>
-                                <div id="editor">{!! $event->deskripsi !!}</div>
+                                <div id="editor" data-upload-url="{{ route('event.description-image') }}">{!! app(\App\Services\HtmlSanitizer::class)->sanitize(old('deskripsi', $event->deskripsi)) !!}</div>
                                 <input type="hidden" name="deskripsi" id="content">
                             </div>
 

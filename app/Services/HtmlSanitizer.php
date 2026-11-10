@@ -29,6 +29,7 @@ class HtmlSanitizer
             'h3',
             'h4',
             'a[href|title|rel]',
+            'img[src|alt|width|height]',
         ]));
         $config->set('URI.AllowedSchemes', [
             'http' => true,

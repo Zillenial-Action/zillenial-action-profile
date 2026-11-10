@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\Event;
+use App\Services\DescriptionImageService;
 use App\Services\HtmlSanitizer;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\File;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
@@ -323,6 +325,18 @@ class EventController extends Controller
             ]);
             return redirect()->route('event.index')->with('error', 'Gagal mengubah status');
         }
+    }
+
+    /**
+     * Upload an image inserted from the description rich text editor.
+     */
+    public function uploadDescriptionImage(Request $request, DescriptionImageService $descriptionImages): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        return response()->json(['url' => $descriptionImages->store($request->file('image'))]);
     }
 
     /**

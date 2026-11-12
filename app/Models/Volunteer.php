@@ -29,7 +29,7 @@ class Volunteer extends Model
     /**
      * Pilihan ukuran baju untuk event yang menyediakan baju (events.ada_baju).
      */
-    public const UKURAN_BAJU = ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    public const UKURAN_BAJU = ['XXS', 'XS', 'S', 'M', 'L', 'XL'];
 
     /**
      * The attributes that are mass assignable.

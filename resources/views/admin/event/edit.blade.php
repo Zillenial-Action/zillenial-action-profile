@@ -117,7 +117,7 @@
                                         name="ada_baju" value="1" @checked(old('ada_baju', $event->ada_baju))>
                                     <label class="form-check-label fw-semibold" for="ada_baju">Event ini menyediakan baju</label>
                                 </div>
-                                <small class="text-muted">Jika aktif, volunteer wajib memilih ukuran baju (S&ndash;XXXL) saat checkout.</small>
+                                <small class="text-muted">Jika aktif, volunteer wajib memilih ukuran baju (XXS&ndash;XL) saat checkout.</small>
                             </div>
 
                             {{-- Description --}}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use App\Models\Event;
+use App\Services\DescriptionImageService;
 use App\Services\HtmlSanitizer;
 use App\Services\ImageService;
 use Illuminate\Support\Facades\File;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
@@ -326,6 +328,18 @@ class EventController extends Controller
     }
 
     /**
+     * Upload an image inserted from the description rich text editor.
+     */
+    public function uploadDescriptionImage(Request $request, DescriptionImageService $descriptionImages): JsonResponse
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        return response()->json(['url' => $descriptionImages->store($request->file('image'))]);
+    }
+
+    /**
      * Normalize event form data before it is persisted.
      *
      * @param array<string, mixed> $data
@@ -355,12 +369,21 @@ class EventController extends Controller
             ->values()
             ->all();
 
+        // Checkbox yang tidak dicentang tidak terkirim, jadi default-nya false.
+        $data['ada_baju'] = (bool) ($data['ada_baju'] ?? false);
+
         $data['direction'] = isset($data['direction']) && trim((string) $data['direction']) !== ''
             ? trim((string) $data['direction'])
             : null;
 
         if (array_key_exists('deskripsi', $data)) {
             $data['deskripsi'] = $this->htmlSanitizer->sanitize($data['deskripsi'] ?? null);
+        }
+
+        if (array_key_exists('syarat_tiket', $data)) {
+            $terms = $this->htmlSanitizer->sanitizeText($data['syarat_tiket'] ?? null);
+            // Editor kosong (mis. "<p><br></p>") disimpan null agar tiket memakai S&K default.
+            $data['syarat_tiket'] = trim(strip_tags((string) $terms)) === '' ? null : $terms;
         }
 
         return $data;

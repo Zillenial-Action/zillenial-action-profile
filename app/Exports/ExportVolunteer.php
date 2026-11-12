@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\Event;
 use App\Models\Volunteer;
 use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -13,14 +14,33 @@ class ExportVolunteer implements FromQuery, WithChunkReading, WithHeadings, With
 {
     protected array $filters;
 
+    protected ?Event $event = null;
+
     public function __construct(array $filters = [])
     {
         $this->filters = $filters;
+
+        if (! empty($filters['event_id'])) {
+            $this->event = Event::find($filters['event_id']);
+        }
+    }
+
+    /**
+     * Kolom ukuran baju hanya relevan saat export difilter ke satu event yang menyediakan baju.
+     */
+    protected function withUkuranBaju(): bool
+    {
+        return (bool) $this->event?->ada_baju;
     }
 
     public function query(): Builder
     {
         return Volunteer::withCount('transaksis')
+            ->when($this->withUkuranBaju(), fn ($q) => $q->with(['transaksis' => fn ($query) =>
+                $query->select('transaksis.id', 'transaksis.id_event')
+                    ->where('id_event', $this->event->id)
+                    ->where('status_pembayaran', 'Success')
+            ]))
             ->orderByDesc('created_at')
             ->when(
                 ! empty($this->filters['event_id']),
@@ -43,6 +63,8 @@ class ExportVolunteer implements FromQuery, WithChunkReading, WithHeadings, With
             'Email',
             'Telepon',
             'Jenis Kelamin',
+            'Domisili',
+            ...($this->withUkuranBaju() ? ['Ukuran Baju'] : []),
             'Jumlah Transaksi',
             'Tanggal Daftar',
         ];
@@ -56,6 +78,10 @@ class ExportVolunteer implements FromQuery, WithChunkReading, WithHeadings, With
             $row->email,
             $row->telepon,
             $row->jenis_kelamin ?? '-',
+            $row->domisili ?? '-',
+            ...($this->withUkuranBaju()
+                ? [$row->transaksis->pluck('pivot.ukuran_baju')->filter()->implode(', ') ?: '-']
+                : []),
             $row->transaksis_count,
             $row->created_at?->format('d-m-Y H:i'),
         ];

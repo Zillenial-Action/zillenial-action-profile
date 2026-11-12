@@ -395,6 +395,17 @@
             gap: 4px;
         }
 
+        .ql-editor {
+            min-height: 220px;
+            font-size: 14px;
+        }
+
+        .ql-editor img,
+        .list-group-item img {
+            max-width: 100%;
+            height: auto;
+        }
+
         .pagination .page-link {
             border-radius: 9px;
             border-color: var(--border);
@@ -438,6 +449,7 @@
             ['url' => '/volunteer',    'label' => 'Volunteer',            'icon' => 'bi-people',                'active' => Request::is('volunteer*')],
             ['url' => '/failed-email', 'label' => 'Email Tidak Terkirim', 'icon' => 'bi-envelope-exclamation', 'active' => Request::is('failed-email*')],
             ['url' => '/sent-email',   'label' => 'Email Tiket Terkirim', 'icon' => 'bi-envelope-check',       'active' => Request::is('sent-email*')],
+            ['url' => '/ticket-setting', 'label' => 'Pengaturan Tiket',   'icon' => 'bi-ticket-detailed',      'active' => Request::is('ticket-setting*')],
             ['url' => '/error-log',    'label' => 'Error Log',            'icon' => 'bi-bug',                  'active' => Request::is('error-log*')],
         ];
     @endphp
@@ -521,16 +533,117 @@
             sidebar?.querySelectorAll('a').forEach((a) => a.addEventListener('click', close));
         })();
 
-        // Quill editor — hanya di halaman yang punya #editor (create/edit)
+        // Rich text editor (Quill) untuk setiap elemen [data-rich-editor].
+        //   data-target      : id hidden input yang diisi HTML saat form disubmit (wajib)
+        //   data-upload-url  : endpoint upload gambar; tanpa ini tombol & paste gambar dinonaktifkan
+        //   data-placeholder : teks placeholder
         (function () {
-            const editorEl = document.getElementById('editor');
-            if (!editorEl || typeof Quill === 'undefined') return;
-            const quill = new Quill('#editor', { theme: 'snow' });
-            const form = editorEl.closest('form');
-            form?.addEventListener('submit', function () {
-                const target = document.getElementById('content');
-                if (target) target.value = quill.root.innerHTML;
-            });
+            if (typeof Quill === 'undefined') return;
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            const maxSize = 2 * 1024 * 1024;
+
+            const initEditor = (editorEl) => {
+                const uploadUrl = editorEl.dataset.uploadUrl;
+                const target = document.getElementById(editorEl.dataset.target || '');
+
+                const status = document.createElement('div');
+                status.className = 'form-text';
+                status.setAttribute('aria-live', 'polite');
+                editorEl.insertAdjacentElement('afterend', status);
+
+                const setStatus = (message, isError = false) => {
+                    status.textContent = message;
+                    status.classList.toggle('text-danger', isError);
+                };
+
+                // Toolbar & formats dibatasi ke yang lolos HtmlSanitizer di server. Tanpa
+                // uploadUrl, format image tidak diizinkan sehingga gambar yang di-paste ikut dibuang.
+                const toolbar = [
+                    [{ header: [2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    uploadUrl ? ['blockquote', 'link', 'image'] : ['blockquote', 'link'],
+                    ['clean'],
+                ];
+                const formats = ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'blockquote', 'link'];
+                if (uploadUrl) formats.push('image');
+
+                let quill;
+
+                const uploadImages = async (files, index) => {
+                    for (const file of files) {
+                        if (!allowedTypes.includes(file.type)) {
+                            setStatus(`"${file.name}" bukan JPG, PNG, atau WEBP.`, true);
+                            continue;
+                        }
+                        if (file.size > maxSize) {
+                            setStatus(`"${file.name}" lebih dari 2MB.`, true);
+                            continue;
+                        }
+
+                        setStatus(`Mengunggah ${file.name}...`);
+                        const body = new FormData();
+                        body.append('image', file);
+
+                        try {
+                            const res = await fetch(uploadUrl, {
+                                method: 'POST',
+                                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                                body,
+                            });
+                            const data = await res.json().catch(() => ({}));
+                            if (!res.ok || !data.url) {
+                                throw new Error(data.message || 'Upload gagal.');
+                            }
+                            quill.insertEmbed(index, 'image', data.url, 'user');
+                            index += 1;
+                            quill.setSelection(index, 0, 'silent');
+                            setStatus('');
+                        } catch (err) {
+                            setStatus(`Gagal mengunggah ${file.name}: ${err.message}`, true);
+                        }
+                    }
+                };
+
+                quill = new Quill(editorEl, {
+                    theme: 'snow',
+                    placeholder: editorEl.dataset.placeholder || '',
+                    formats,
+                    modules: {
+                        toolbar: {
+                            container: toolbar,
+                            handlers: {
+                                image() {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = allowedTypes.join(',');
+                                    input.addEventListener('change', () => {
+                                        const range = quill.getSelection(true);
+                                        uploadImages(Array.from(input.files || []), range ? range.index : quill.getLength());
+                                    });
+                                    input.click();
+                                },
+                            },
+                        },
+                        // Drag & drop / paste file gambar juga di-upload ke server, bukan disimpan sebagai base64.
+                        uploader: {
+                            mimetypes: uploadUrl ? allowedTypes : [],
+                            handler(range, files) {
+                                uploadImages(files, range.index);
+                            },
+                        },
+                    },
+                });
+
+                editorEl.closest('form')?.addEventListener('submit', function () {
+                    // getSemanticHTML menghasilkan <ul>/<ol> standar (root.innerHTML memakai <ol data-list="bullet">).
+                    if (target) target.value = quill.getLength() > 1 ? quill.getSemanticHTML() : '';
+                });
+            };
+
+            document.querySelectorAll('[data-rich-editor]').forEach(initEditor);
         })();
 
         // Konfirmasi hapus (dipakai onsubmit="return confirmDelete()")

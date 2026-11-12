@@ -7,6 +7,7 @@ use App\Models\KodeVoucher;
 use App\Models\Payment;
 use App\Models\Transaksi;
 use App\Models\Volunteer;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,7 @@ class CheckoutService
      * Proses checkout: potong stok, buat transaksi, attach volunteer, redeem voucher, buat snap token.
      * Total pembayaran dihitung server-side; jangan percaya nilai dari client.
      *
-     * @param  array<int, array{name: string, email: string, telepon: string, jenis_kelamin?: string}>  $pengunjung
+     * @param  array<int, array{name: string, email: string, telepon: string, jenis_kelamin?: string, domisili?: string, ukuran_baju?: string}>  $pengunjung
      * @param  array<string, mixed>  $tracking  Atribut UTM dari UtmData::toAttributes().
      * @throws \Exception
      */
@@ -177,7 +178,7 @@ class CheckoutService
     /**
      * Buat (atau pakai ulang) Volunteer dari pengunjung_data transaksi dan pasang pivotnya.
      * Dipanggil hanya saat status_pembayaran sudah/akan menjadi Success — panggilan berulang
-     * aman (idempotent) karena Volunteer dicari via firstOrCreate dan pivot pakai syncWithoutDetaching.
+     * aman (idempotent) karena Volunteer dicari per email dan pivot pakai syncWithoutDetaching.
      *
      * @return \Illuminate\Support\Collection<int, Volunteer>
      */
@@ -187,22 +188,84 @@ class CheckoutService
         $volunteers = collect();
 
         foreach ($pengunjung as $p) {
-            $volunteer = Volunteer::firstOrCreate(
-                ['email' => $p['email']],
-                [
-                    'name'          => $p['name'],
-                    'telepon'       => $p['telepon'],
-                    'jenis_kelamin' => $p['jenis_kelamin'] ?? null,
-                ]
-            );
-            if (! $volunteer->wasRecentlyCreated && empty($volunteer->jenis_kelamin) && ! empty($p['jenis_kelamin'])) {
-                $volunteer->update(['jenis_kelamin' => $p['jenis_kelamin']]);
+            $volunteer = $this->resolveVolunteer($p);
+
+            if (! $volunteer->wasRecentlyCreated) {
+                $updates = [];
+                if (empty($volunteer->jenis_kelamin) && ! empty($p['jenis_kelamin'])) {
+                    $updates['jenis_kelamin'] = $p['jenis_kelamin'];
+                }
+                // Domisili bisa berubah (pindah kota), jadi selalu pakai isian terbaru.
+                if (! empty($p['domisili']) && $volunteer->domisili !== $p['domisili']) {
+                    $updates['domisili'] = $p['domisili'];
+                }
+                if ($updates) {
+                    $volunteer->update($updates);
+                }
             }
-            $transaksi->volunteers()->syncWithoutDetaching([$volunteer->id]);
+            // Ukuran baju per event, jadi disimpan di pivot transaksi-volunteer.
+            $transaksi->volunteers()->syncWithoutDetaching([
+                $volunteer->id => ['ukuran_baju' => $p['ukuran_baju'] ?? null],
+            ]);
             $volunteers->push($volunteer);
         }
 
         return $volunteers;
+    }
+
+    /**
+     * Cari volunteer berdasarkan email, termasuk yang sudah di-soft-delete, lalu restore kalau perlu.
+     *
+     * `volunteers.email` UNIQUE sementara modelnya soft delete, jadi `firstOrCreate` biasa akan
+     * menabrak unique constraint kalau email itu pernah dihapus admin. Karena method ini dipanggil
+     * dari webhook Midtrans saat pembayaran Success, exception di sini membuat transaksi ter-rollback
+     * dan tetap Pending padahal uangnya sudah masuk — jadi datanya harus dicari dengan withTrashed().
+     *
+     * Create dibungkus try/catch untuk kasus dua webhook/checkout dengan email sama yang masuk
+     * bersamaan: yang kalah balapan mengambil baris yang baru saja dibuat alih-alih gagal.
+     *
+     * @param  array{name: string, email: string, telepon: string, jenis_kelamin?: string, domisili?: string}  $p
+     */
+    protected function resolveVolunteer(array $p): Volunteer
+    {
+        $volunteer = Volunteer::withTrashed()->where('email', $p['email'])->first();
+
+        if ($volunteer) {
+            if ($volunteer->trashed()) {
+                $volunteer->restore();
+
+                Log::info('Volunteer dipulihkan otomatis saat materialize', [
+                    'volunteer_id' => $volunteer->id,
+                    'email'        => $p['email'],
+                ]);
+            }
+
+            return $volunteer;
+        }
+
+        $attributes = [
+            'email'         => $p['email'],
+            'name'          => $p['name'],
+            'telepon'       => $p['telepon'],
+            'jenis_kelamin' => $p['jenis_kelamin'] ?? null,
+            'domisili'      => $p['domisili'] ?? null,
+        ];
+
+        try {
+            return Volunteer::create($attributes);
+        } catch (UniqueConstraintViolationException $e) {
+            $volunteer = Volunteer::withTrashed()->where('email', $p['email'])->first();
+
+            if (! $volunteer) {
+                throw $e;
+            }
+
+            if ($volunteer->trashed()) {
+                $volunteer->restore();
+            }
+
+            return $volunteer;
+        }
     }
 
     /**

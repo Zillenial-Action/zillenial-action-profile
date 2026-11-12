@@ -17,6 +17,11 @@ class Kernel extends ConsoleKernel
         $schedule->command('transaksi:expire-pending')
             ->everyFifteenMinutes()
             ->withoutOverlapping();
+
+        // Gambar editor deskripsi yang di-upload tapi tidak jadi disimpan ke event mana pun.
+        $schedule->command('event:prune-description-images')
+            ->dailyAt('03:00')
+            ->withoutOverlapping();
     }
 
     /**

@@ -56,6 +56,10 @@ class ExportTransaksi implements FromQuery, ShouldAutoSize, WithColumnFormatting
             'Status Pembayaran',
             'Tanggal Pembayaran',
             'Metode Pembayaran',
+            // Last touch sebelum checkout (sama dengan kolom "Sumber (UTM)" di tabel admin).
+            'UTM Source',
+            'UTM Medium',
+            'UTM Campaign',
         ];
     }
 
@@ -76,6 +80,9 @@ class ExportTransaksi implements FromQuery, ShouldAutoSize, WithColumnFormatting
             $row->status_pembayaran,
             $this->toExcelDate($row->tanggal_pembayaran),
             $row->payment?->name,
+            $row->utm_source,
+            $row->utm_medium,
+            $row->utm_campaign,
         ];
     }
 

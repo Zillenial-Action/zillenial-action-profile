@@ -38,7 +38,7 @@ class CheckoutVolunteerDeferralTest extends TestCase
             'jumlah_tiket' => 1,
             'payment_method_id' => $payment->id,
             'pengunjung' => [
-                ['name' => 'Budi Santoso', 'telepon' => '81234567890', 'email' => 'budi@gmail.com'],
+                ['name' => 'Budi Santoso', 'telepon' => '81234567890', 'email' => 'budi@gmail.com', 'domisili' => 'Bandung'],
             ],
         ]);
 
@@ -108,5 +108,55 @@ class CheckoutVolunteerDeferralTest extends TestCase
 
         $this->assertSame(1, $transaksi->volunteers()->count(), 'Panggilan kedua tidak boleh membuat duplikat.');
         $this->assertDatabaseCount('volunteers', 1);
+    }
+
+    /**
+     * Regresi: volunteers.email UNIQUE dan modelnya soft delete. Kalau volunteer dengan email itu
+     * sudah dihapus admin lalu orangnya beli tiket lagi, materialize tidak boleh menabrak unique
+     * constraint — kalau error, webhook Success di-rollback dan pembayaran yang sudah masuk hilang.
+     */
+    public function test_materialize_volunteers_restores_soft_deleted_volunteer_with_same_email(): void
+    {
+        $event = Event::factory()->create();
+        $payment = Payment::factory()->create();
+
+        $deleted = \App\Models\Volunteer::create([
+            'name'          => 'Budi Santoso',
+            'email'         => 'budi@gmail.com',
+            'telepon'       => '+6281234567890',
+            'jenis_kelamin' => 'Laki-laki',
+            'domisili'      => 'Bandung',
+        ]);
+        $deleted->delete();
+        $this->assertSoftDeleted('volunteers', ['id' => $deleted->id]);
+
+        $transaksi = \App\Models\Transaksi::create([
+            'id_event'          => $event->id,
+            'invoice'           => 'INV-MAT-003',
+            'jumlah_tiket'      => 1,
+            'total_pembayaran'  => 100000,
+            'name'              => 'Budi Santoso',
+            'email'             => 'budi@gmail.com',
+            'telepon'           => '+6281234567890',
+            'status_pembayaran' => 'Pending',
+            'tanggal_register'  => now(),
+            'id_payment'        => $payment->id,
+            'pengunjung_data'   => [
+                ['name' => 'Budi Santoso', 'email' => 'budi@gmail.com', 'telepon' => '+6281234567890', 'domisili' => 'Jakarta'],
+            ],
+        ]);
+
+        $volunteers = app(\App\Services\CheckoutService::class)->materializeVolunteers($transaksi);
+
+        $this->assertCount(1, $volunteers);
+        $this->assertSame($deleted->id, $volunteers->first()->id, 'Harus memakai ulang baris yang sama, bukan membuat baru.');
+        $this->assertDatabaseCount('volunteers', 1);
+        $this->assertDatabaseHas('volunteers', [
+            'id'         => $deleted->id,
+            'email'      => 'budi@gmail.com',
+            'domisili'   => 'Jakarta',
+            'deleted_at' => null,
+        ]);
+        $this->assertSame(1, $transaksi->volunteers()->count());
     }
 }

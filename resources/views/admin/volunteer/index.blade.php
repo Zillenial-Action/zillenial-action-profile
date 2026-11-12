@@ -120,6 +120,7 @@
                                 <th>Email</th>
                                 <th>Telepon</th>
                                 <th>Jenis Kelamin</th>
+                                <th>Domisili</th>
                                 <th>Transaksi</th>
                                 <th>Tanggal Daftar</th>
                                 <th class="text-end">Aksi</th>
@@ -141,6 +142,7 @@
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
+                                    <td>{{ $item->domisili ?? '-' }}</td>
                                     <td>
                                         <span
                                             class="badge {{ $item->transaksis_count > 0 ? 'bg-success' : 'bg-secondary' }}">
@@ -162,7 +164,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">
+                                    <td colspan="9" class="text-center text-muted py-4">
                                         @if (request('event_id') || request('search'))
                                             Tidak ada volunteer ditemukan dengan filter ini.
                                         @else

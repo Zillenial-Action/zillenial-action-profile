@@ -59,6 +59,28 @@ class TransaksiExportTest extends TestCase
         $this->assertSame('dd-mm-yyyy hh:mm', $sheet->getStyle('K2')->getNumberFormat()->getFormatCode());
     }
 
+    public function test_export_includes_utm_columns(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        Transaksi::factory()->create([
+            'utm_source' => 'instagram',
+            'utm_medium' => 'story',
+            'utm_campaign' => '=cmd|calc',
+        ]);
+
+        $sheet = $this->sheetFrom($this->get(route('transaksi.export'))->assertOk());
+
+        $this->assertSame('UTM Source', $sheet->getCell('O1')->getValue());
+        $this->assertSame('UTM Medium', $sheet->getCell('P1')->getValue());
+        $this->assertSame('UTM Campaign', $sheet->getCell('Q1')->getValue());
+        $this->assertSame('instagram', $sheet->getCell('O2')->getValue());
+        $this->assertSame('story', $sheet->getCell('P2')->getValue());
+        // Nilai UTM berasal dari URL publik: harus tetap teks, bukan formula.
+        $this->assertFalse($sheet->getCell('Q2')->isFormula());
+        $this->assertSame('=cmd|calc', $sheet->getCell('Q2')->getValue());
+    }
+
     public function test_customer_input_is_written_as_text_not_formula_or_number(): void
     {
         $this->actingAs(User::factory()->create());

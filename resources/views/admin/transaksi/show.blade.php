@@ -114,6 +114,16 @@
                                             <p><strong>Telepon</strong></p>
                                             <p>{{ $volunteer->telepon }}</p>
                                         </div>
+                                        <div class="p-3 w-100">
+                                            <p><strong>Domisili</strong></p>
+                                            <p>{{ $volunteer->domisili ?? '-' }}</p>
+                                        </div>
+                                        @if ($transaksi->event?->ada_baju)
+                                            <div class="p-3 w-100">
+                                                <p><strong>Ukuran Baju</strong></p>
+                                                <p>{{ $volunteer->pivot->ukuran_baju ?? '-' }}</p>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach

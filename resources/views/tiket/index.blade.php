@@ -72,17 +72,16 @@
     </style>
 </head>
 
+@inject('ticketSettings', 'App\Services\TicketSettings')
 <body>
     <div class="container">
         <div class="header">
             <h1>Pembayaran Berhasil!</h1>
         </div>
         <div class="content">
-            <p>Halo,</p>
-            <p>Terima kasih! Pembayaran Anda telah berhasil kami terima. Tiket Anda sudah siap.</p>
+            {{-- Diatur di admin: Pengaturan Tiket > Pesan Email Tiket (disanitasi saat disimpan). --}}
+            {!! $ticketSettings->get('ticket_email_message') !!}
 
-            {{-- Anda bisa meneruskan data tiket dari Mailable ke view --}}
-            {{-- Misalnya, jika Anda meneruskan $transactionId dan $ticketUrl --}}
             @isset($transactionId)
                 <p>ID Transaksi Anda: <strong>{{ $transactionId }}</strong></p>
             @endisset

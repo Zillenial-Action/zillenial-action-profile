@@ -9,6 +9,7 @@ use App\Http\Controllers\FailedEmailController;
 use App\Http\Controllers\FundraiserProgramController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\SentEmailController;
+use App\Http\Controllers\TicketSettingController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\UtmReportController;
 use App\Http\Controllers\PaymentController;
@@ -78,6 +79,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/transaksi/update', [TransaksiController::class, 'updateStatus'])->name('transaksi.update-status');
     Route::post('/transaksi/{transaksi}/kirim-email', [TransaksiController::class, 'sendTicketEmail'])->name('transaksi.send-email');
     Route::put('/event/update-status/{event}', [EventController::class, 'updateStatus'])->name('event.update.status');
+    Route::post('/event/description-image', [EventController::class, 'uploadDescriptionImage'])
+        ->middleware('throttle:30,1')
+        ->name('event.description-image');
 
     // Event - Soft Delete Management
     Route::get('/event/trashed', [EventController::class, 'trashed'])->name('event.trashed');
@@ -120,6 +124,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sent-email', [SentEmailController::class, 'index'])->name('sent-email.index');
     Route::delete('/sent-email/clear-all', [SentEmailController::class, 'clearAll'])->name('sent-email.clearAll');
     Route::delete('/sent-email/{id}', [SentEmailController::class, 'destroy'])->name('sent-email.destroy');
+
+    // Pengaturan Tiket (S&K default, pesan email, kontak footer)
+    Route::get('/ticket-setting', [TicketSettingController::class, 'edit'])->name('ticket-setting.edit');
+    Route::put('/ticket-setting', [TicketSettingController::class, 'update'])->name('ticket-setting.update');
 
     // Error Log
     Route::get('/error-log', [ErrorLogController::class, 'index'])->name('error-log.index');

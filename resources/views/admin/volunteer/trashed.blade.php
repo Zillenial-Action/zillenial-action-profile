@@ -30,6 +30,7 @@
                                 <th>Email</th>
                                 <th>Telepon</th>
                                 <th>Jenis Kelamin</th>
+                                <th>Domisili</th>
                                 <th>Dihapus Pada</th>
                                 <th class="text-end">Aksi</th>
                             </tr>
@@ -50,6 +51,7 @@
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
+                                    <td>{{ $item->domisili ?? '-' }}</td>
                                     <td>{{ $item->deleted_at->format('d-m-Y H:i') }}</td>
                                     <td class="text-end">
                                         <div class="d-inline-flex gap-1">
@@ -75,7 +77,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Tidak ada volunteer terhapus.</td>
+                                    <td colspan="8" class="text-center text-muted py-4">Tidak ada volunteer terhapus.</td>
                                 </tr>
                             @endforelse
                         </tbody>

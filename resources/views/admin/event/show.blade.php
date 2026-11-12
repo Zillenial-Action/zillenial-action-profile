@@ -129,6 +129,21 @@
                                         <a href="{{ route('ticket-setting.edit') }}">Pengaturan Tiket</a>.</div>
                                 @endif
                             </li>
+                            <li class="list-group-item">
+                                <strong>Pesan Email Tiket</strong>
+                                @if (filled(strip_tags((string) $event->pesan_email_tiket)))
+                                    <div class="mt-2">{!! $event->pesan_email_tiket !!}</div>
+                                @else
+                                    <div class="text-muted mt-2">Memakai pesan default dari
+                                        <a href="{{ route('ticket-setting.edit') }}">Pengaturan Tiket</a>.</div>
+                                @endif
+                                @if ($event->kontak_whatsapp_tiket || $event->kontak_email_tiket || $event->kontak_website_tiket)
+                                    <div class="mt-2 small">
+                                        <strong>Kontak khusus:</strong>
+                                        {{ collect([$event->kontak_whatsapp_tiket, $event->kontak_email_tiket, $event->kontak_website_tiket])->filter()->implode(' · ') }}
+                                    </div>
+                                @endif
+                            </li>
                         </ul>
                         {{-- <div class="card-body">
                             <a href="{{ $data->website }}" class="card-link">Lihat Campaign</a>

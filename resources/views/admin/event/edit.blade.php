@@ -139,6 +139,37 @@
                                     <a href="{{ route('ticket-setting.edit') }}" target="_blank">Pengaturan Tiket</a>.</small>
                             </div>
 
+                            {{-- Pengaturan email tiket & kontak khusus event --}}
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <i class="bi bi-envelope-paper me-2"></i>Email &amp; Kontak Tiket Event Ini
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted small mb-3">Semua kolom opsional. Kolom yang dikosongkan memakai nilai default dari
+                                        <a href="{{ route('ticket-setting.edit') }}" target="_blank">Pengaturan Tiket</a>.</p>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Pesan Email Tiket</label>
+                                        <div data-rich-editor data-target="pesan_email_tiket"
+                                            data-placeholder="Kosongkan untuk memakai pesan email default">{!! app(\App\Services\HtmlSanitizer::class)->sanitizeText(old('pesan_email_tiket', $event->pesan_email_tiket)) !!}</div>
+                                        <input type="hidden" name="pesan_email_tiket" id="pesan_email_tiket">
+                                        <small class="text-muted">Pembuka email "Pembayaran Berhasil". ID transaksi dan tombol <strong>Lihat Tiket Anda</strong> otomatis ditambahkan di bawahnya.</small>
+                                        @error('pesan_email_tiket')
+                                            <div class="text-danger small mt-1">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <x-form-input name="kontak_whatsapp_tiket" label="Nomor WhatsApp" placeholder="Default dari Pengaturan Tiket"
+                                        :value="$event->kontak_whatsapp_tiket" hint="Boleh diawali 0, 62, atau +62." />
+
+                                    <x-form-input name="kontak_email_tiket" label="Email Kontak" type="email"
+                                        placeholder="Default dari Pengaturan Tiket" :value="$event->kontak_email_tiket" />
+
+                                    <x-form-input name="kontak_website_tiket" label="Website" type="url"
+                                        placeholder="Default dari Pengaturan Tiket" :value="$event->kontak_website_tiket" />
+                                </div>
+                            </div>
+
                             @include('admin.event.partials.benefit-fields', ['event' => $event])
 
                             @include('admin.event.partials.agenda-fields', ['event' => $event])

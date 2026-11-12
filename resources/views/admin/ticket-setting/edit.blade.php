@@ -42,6 +42,7 @@
                             <p class="text-muted small mb-3">
                                 Pembuka email "Pembayaran Berhasil". ID transaksi dan tombol
                                 <strong>Lihat Tiket Anda</strong> otomatis ditambahkan di bawah pesan ini.
+                                Dipakai untuk semua event, kecuali event yang punya pesan email sendiri (diatur di form event).
                             </p>
                             <div data-rich-editor data-target="ticket_email_message"
                                 data-placeholder="Tulis pesan email...">{!! app(\App\Services\HtmlSanitizer::class)->sanitizeText(old('ticket_email_message', $settings['ticket_email_message'])) !!}</div>
@@ -57,7 +58,7 @@
                             <i class="bi bi-telephone me-2"></i>Kontak di Footer Tiket
                         </div>
                         <div class="card-body p-4">
-                            <p class="text-muted small mb-3">Kosongkan kolom yang tidak ingin ditampilkan.</p>
+                            <p class="text-muted small mb-3">Kosongkan kolom yang tidak ingin ditampilkan. Event bisa memakai kontak sendiri lewat form event.</p>
 
                             <x-form-input name="ticket_contact_whatsapp" label="Nomor WhatsApp"
                                 placeholder="6282121392363" :value="$settings['ticket_contact_whatsapp']"

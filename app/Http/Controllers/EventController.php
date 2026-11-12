@@ -380,10 +380,19 @@ class EventController extends Controller
             $data['deskripsi'] = $this->htmlSanitizer->sanitize($data['deskripsi'] ?? null);
         }
 
-        if (array_key_exists('syarat_tiket', $data)) {
-            $terms = $this->htmlSanitizer->sanitizeText($data['syarat_tiket'] ?? null);
-            // Editor kosong (mis. "<p><br></p>") disimpan null agar tiket memakai S&K default.
-            $data['syarat_tiket'] = trim(strip_tags((string) $terms)) === '' ? null : $terms;
+        // Editor kosong (mis. "<p><br></p>") disimpan null agar tiket/email memakai default Pengaturan Tiket.
+        foreach (['syarat_tiket', 'pesan_email_tiket'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $html = $this->htmlSanitizer->sanitizeText($data[$field] ?? null);
+                $data[$field] = trim(strip_tags((string) $html)) === '' ? null : $html;
+            }
+        }
+
+        foreach (['kontak_whatsapp_tiket', 'kontak_email_tiket', 'kontak_website_tiket'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $value = trim((string) $data[$field]);
+                $data[$field] = $value === '' ? null : $value;
+            }
         }
 
         return $data;

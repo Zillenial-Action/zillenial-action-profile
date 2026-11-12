@@ -129,4 +129,72 @@ class TicketSettingsTest extends TestCase
         $this->put(route('event.update', $event->fresh()), $payload + ['syarat_tiket' => '<p><br></p>'])->assertRedirect();
         $this->assertNull($event->fresh()->syarat_tiket);
     }
+
+    public function test_event_email_message_and_contacts_override_defaults(): void
+    {
+        $event = Event::factory()->create([
+            'status' => true,
+            'name' => 'Social Trip Garut',
+            'pesan_email_tiket' => '<p>Sampai jumpa di Garut!</p>',
+            'kontak_whatsapp_tiket' => '0811 1111 2222',
+            'kontak_email_tiket' => 'garut@example.test',
+            'kontak_website_tiket' => null,
+        ]);
+        $transaksi = $this->ticketFor($event);
+
+        $this->ticketPage($transaksi)
+            ->assertSee('https://wa.me/6281111112222', false)
+            ->assertSee('garut@example.test')
+            ->assertDontSee('zillenialaction@gmail.com')
+            ->assertSee('zillenialaction.id');
+
+        $mail = new SendTicket($transaksi->invoice, 'https://example.test/tiket');
+        $html = $mail->render();
+        $this->assertStringContainsString('Sampai jumpa di Garut!', $html);
+        $this->assertStringNotContainsString('Pembayaran Anda telah berhasil kami terima', $html);
+        $this->assertSame('Tiket Event - Social Trip Garut', $mail->envelope()->subject);
+
+        $other = Event::factory()->create(['status' => true, 'pesan_email_tiket' => null]);
+        $this->assertStringContainsString(
+            'Pembayaran Anda telah berhasil kami terima',
+            app(TicketSettings::class)->emailMessageFor($other)
+        );
+    }
+
+    public function test_event_form_saves_ticket_email_settings(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $event = Event::factory()->create(['name' => 'Social Trip Garut']);
+
+        $payload = [
+            'name' => 'Social Trip Garut',
+            'mitra' => 'Zillenial Action',
+            'waktu_mulai' => now()->addWeek()->format('Y-m-d H:i:s'),
+            'waktu_berakhir' => now()->addWeek()->addHours(3)->format('Y-m-d H:i:s'),
+            'nama_tempat' => 'Garut',
+            'alamat' => 'Jl. Raya',
+            'kota' => 'Garut',
+            'jumlah_tiket' => 20,
+            'harga' => 150000,
+        ];
+
+        $this->put(route('event.update', $event), $payload + [
+            'pesan_email_tiket' => '<p onclick="x()">Halo peserta Garut</p><script>alert(1)</script>',
+            'kontak_whatsapp_tiket' => '081122223333',
+            'kontak_email_tiket' => '',
+            'kontak_website_tiket' => 'https://garut.example',
+        ])->assertRedirect();
+
+        $fresh = $event->fresh();
+        $this->assertSame('<p>Halo peserta Garut</p>', $fresh->pesan_email_tiket);
+        $this->assertSame('081122223333', $fresh->kontak_whatsapp_tiket);
+        $this->assertNull($fresh->kontak_email_tiket);
+        $this->assertSame('https://garut.example', $fresh->kontak_website_tiket);
+
+        $this->put(route('event.update', $fresh), $payload + ['pesan_email_tiket' => '<p><br></p>'])->assertRedirect();
+        $this->assertNull($event->fresh()->pesan_email_tiket);
+
+        $this->put(route('event.update', $event->fresh()), $payload + ['kontak_whatsapp_tiket' => 'abc'])
+            ->assertSessionHasErrors('kontak_whatsapp_tiket');
+    }
 }

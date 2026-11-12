@@ -79,8 +79,8 @@
             <h1>Pembayaran Berhasil!</h1>
         </div>
         <div class="content">
-            {{-- Diatur di admin: Pengaturan Tiket > Pesan Email Tiket (disanitasi saat disimpan). --}}
-            {!! $ticketSettings->get('ticket_email_message') !!}
+            {{-- Diatur di form event (Pesan Email Tiket) atau default di Pengaturan Tiket; disanitasi saat disimpan. --}}
+            {!! $ticketSettings->emailMessageFor($event ?? null) !!}
 
             @isset($transactionId)
                 <p>ID Transaksi Anda: <strong>{{ $transactionId }}</strong></p>

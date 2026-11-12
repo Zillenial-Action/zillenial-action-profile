@@ -147,18 +147,19 @@ class CheckoutService
             $transaksi->load('event');
             $this->createPaymentInstrument($transaksi, $payment);
 
-        } catch (\Exception $e) {
-            Log::error('Checkout process gagal (fase HTTP), melepas reservasi: ' . $e->getMessage(), [
-                'invoice'      => $transaksi->invoice,
-                'event_id'     => $event->id,
-                'voucher_code' => $voucherCode,
-            ]);
-
-            // Compensating transaction: kembalikan stok + kuota voucher + hapus transaksi
+        } catch (\Throwable $e) {
+            // Compensating transaction lebih dulu: kembalikan stok + kuota voucher + hapus transaksi.
+            // Dijalankan sebelum logging supaya kegagalan menulis log tidak meninggalkan transaksi yatim.
             DB::transaction(function () use ($transaksi) {
                 $this->releaseReservation($transaksi);
                 $transaksi->forceDelete();
             });
+
+            Log::error('Checkout process gagal (fase HTTP), reservasi dilepas: ' . $e->getMessage(), [
+                'invoice'      => $transaksi->invoice,
+                'event_id'     => $event->id,
+                'voucher_code' => $voucherCode,
+            ]);
 
             throw $e;
         }

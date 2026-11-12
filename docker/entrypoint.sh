@@ -93,6 +93,12 @@ if [ "${RUN_MIGRATIONS}" = "true" ]; then
 fi
 
 php artisan storage:link 2>/dev/null || true
+
+# Buat file log lebih dulu sebagai milik www-data. Jika file ini pertama kali dibuat oleh proses
+# root (artisan/queue/scheduler), PHP-FPM (www-data) tidak bisa menulis log dan setiap request
+# yang memanggil Log:: berakhir 500 (mis. /api/checkout & /midtrans/notification).
+mkdir -p storage/logs
+touch storage/logs/laravel.log
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 
 # ---------- Persistent uploads (Railway Volume di-mount ke /var/www/html/public/image) ----------
@@ -137,7 +143,8 @@ if [ "${QUEUE_CONNECTION:-database}" != "sync" ]; then
     echo "[entrypoint] Starting queue worker in background..."
     (
         while true; do
-            php artisan queue:work --queue=default --sleep=3 --tries=5 --max-time=3600 --backoff=60 2>&1
+            # Jalan sebagai www-data (sama dengan PHP-FPM) agar file di storage/ tetap bisa ditulis web.
+            su www-data -s /bin/sh -c "/usr/local/bin/php artisan queue:work --queue=default --sleep=3 --tries=5 --max-time=3600 --backoff=60" 2>&1
             echo "[entrypoint] queue worker exited, restarting in 3s..."
             sleep 3
         done
@@ -155,7 +162,7 @@ fi
 echo "[entrypoint] Starting scheduler (schedule:work) in background..."
 (
     while true; do
-        php artisan schedule:work 2>&1
+        su www-data -s /bin/sh -c "/usr/local/bin/php artisan schedule:work" 2>&1
         echo "[entrypoint] scheduler exited, restarting in 3s..."
         sleep 3
     done

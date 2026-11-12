@@ -76,7 +76,7 @@ class CheckoutVolunteerDetailsTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors('pengunjung.0.ukuran_baju');
 
-        $this->checkout(['domisili' => 'Bandung', 'ukuran_baju' => 'XS'])
+        $this->checkout(['domisili' => 'Bandung', 'ukuran_baju' => 'XXXL'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('pengunjung.0.ukuran_baju');
     }
@@ -128,7 +128,7 @@ class CheckoutVolunteerDetailsTest extends TestCase
         $this->getJson('/api/events/social-trip')
             ->assertOk()
             ->assertJsonPath('data.ada_baju', true)
-            ->assertJsonPath('data.ukuran_baju', ['S', 'M', 'L', 'XL', 'XXL', 'XXXL']);
+            ->assertJsonPath('data.ukuran_baju', ['XXS', 'XS', 'S', 'M', 'L', 'XL']);
     }
 
     public function test_admin_can_toggle_shirt_flag_on_event(): void

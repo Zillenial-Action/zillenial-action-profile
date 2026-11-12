@@ -21,6 +21,10 @@ use Illuminate\Support\Str;
  * @property string|null $website
  * @property string|null $deskripsi
  * @property string|null $syarat_tiket
+ * @property string|null $pesan_email_tiket
+ * @property string|null $kontak_whatsapp_tiket
+ * @property string|null $kontak_email_tiket
+ * @property string|null $kontak_website_tiket
  * @property array<int, string>|null $benefits
  * @property array<int, array<string, string>>|null $agenda
  * @property bool $ada_baju
@@ -56,6 +60,10 @@ class Event extends Model
         'website',
         'deskripsi',
         'syarat_tiket',
+        'pesan_email_tiket',
+        'kontak_whatsapp_tiket',
+        'kontak_email_tiket',
+        'kontak_website_tiket',
         'benefits',
         'agenda',
         'ada_baju',

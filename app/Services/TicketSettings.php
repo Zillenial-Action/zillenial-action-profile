@@ -69,42 +69,80 @@ class TicketSettings
     }
 
     /**
+     * Kolom event yang menimpa pengaturan default (kosong = pakai default).
+     */
+    private const EVENT_OVERRIDES = [
+        'ticket_terms' => 'syarat_tiket',
+        'ticket_email_message' => 'pesan_email_tiket',
+        'ticket_contact_whatsapp' => 'kontak_whatsapp_tiket',
+        'ticket_contact_email' => 'kontak_email_tiket',
+        'ticket_contact_website' => 'kontak_website_tiket',
+    ];
+
+    /**
+     * Nilai untuk event tertentu: milik event bila diisi, selain itu default.
+     */
+    public function getFor(string $key, ?Event $event): ?string
+    {
+        $column = self::EVENT_OVERRIDES[$key] ?? null;
+        $eventValue = $column ? $event?->{$column} : null;
+
+        return $this->isBlank($eventValue) ? $this->get($key) : $eventValue;
+    }
+
+    /**
      * S&K yang tampil di tiket: milik event bila diisi, selain itu default.
      */
     public function termsFor(?Event $event): ?string
     {
-        $eventTerms = $event?->syarat_tiket;
+        return $this->getFor('ticket_terms', $event);
+    }
 
-        return $this->isBlank($eventTerms) ? $this->get('ticket_terms') : $eventTerms;
+    /**
+     * Pembuka email tiket: milik event bila diisi, selain itu default.
+     */
+    public function emailMessageFor(?Event $event): ?string
+    {
+        return $this->getFor('ticket_email_message', $event);
     }
 
     /**
      * Link wa.me dari nomor yang disimpan (08xx / +62xx / 62xx).
      */
-    public function whatsappLink(): ?string
+    public function whatsappLink(?Event $event = null): ?string
     {
-        $digits = $this->whatsappDigits();
+        $digits = $this->whatsappDigits($event);
 
         return $digits ? 'https://wa.me/' . $digits : null;
     }
 
-    public function whatsappLabel(): ?string
+    public function whatsappLabel(?Event $event = null): ?string
     {
-        $digits = $this->whatsappDigits();
+        $digits = $this->whatsappDigits($event);
 
         return $digits ? '+' . $digits : null;
     }
 
-    public function websiteLabel(): ?string
+    public function contactEmail(?Event $event = null): ?string
     {
-        $website = $this->get('ticket_contact_website');
+        return $this->getFor('ticket_contact_email', $event);
+    }
+
+    public function website(?Event $event = null): ?string
+    {
+        return $this->getFor('ticket_contact_website', $event);
+    }
+
+    public function websiteLabel(?Event $event = null): ?string
+    {
+        $website = $this->website($event);
 
         return $website ? preg_replace('#^https?://#i', '', rtrim($website, '/')) : null;
     }
 
-    private function whatsappDigits(): ?string
+    private function whatsappDigits(?Event $event): ?string
     {
-        $digits = preg_replace('/\D+/', '', (string) $this->get('ticket_contact_whatsapp'));
+        $digits = preg_replace('/\D+/', '', (string) $this->getFor('ticket_contact_whatsapp', $event));
         if ($digits === '') {
             return null;
         }

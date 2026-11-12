@@ -2,6 +2,8 @@
 
 namespace App\Mail;
 
+use App\Models\Event;
+use App\Models\Transaksi;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -56,9 +58,19 @@ class SendTicket extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
+        $eventName = $this->event()?->name;
+
         return new Envelope(
-            subject: 'Tiket Event',
+            subject: $eventName ? 'Tiket Event - ' . $eventName : 'Tiket Event',
         );
+    }
+
+    /**
+     * Event milik transaksi, dipakai untuk pesan email & subjek khusus per event.
+     */
+    private function event(): ?Event
+    {
+        return Transaksi::with('event')->where('invoice', $this->transactionId)->first()?->event;
     }
 
     /**
@@ -84,6 +96,7 @@ class SendTicket extends Mailable implements ShouldQueue
             with: [ // Teruskan data ke view
                 'transactionId' => $this->transactionId,
                 'ticketUrl' => $this->ticketUrl,
+                'event' => $this->event(),
             ],
         );
     }

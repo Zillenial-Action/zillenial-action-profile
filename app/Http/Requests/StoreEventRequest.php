@@ -37,6 +37,10 @@ class StoreEventRequest extends FormRequest
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048|dimensions:min_width=100,min_height=100',
             'deskripsi' => 'nullable',
             'syarat_tiket' => 'nullable|string|max:20000',
+            'pesan_email_tiket' => 'nullable|string|max:20000',
+            'kontak_whatsapp_tiket' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9\s-]{9,20}$/'],
+            'kontak_email_tiket' => 'nullable|email|max:255',
+            'kontak_website_tiket' => 'nullable|url|max:255',
             'benefits' => 'nullable|array',
             'benefits.*' => 'nullable|string|max:150',
             'agenda' => 'nullable|array',
@@ -44,6 +48,16 @@ class StoreEventRequest extends FormRequest
             'agenda.*.title' => 'nullable|string|max:150',
             'agenda.*.description' => 'nullable|string|max:500',
             'ada_baju' => 'nullable|boolean',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'kontak_whatsapp_tiket.regex' => 'Nomor WhatsApp hanya boleh berisi angka (boleh diawali +).',
         ];
     }
 }

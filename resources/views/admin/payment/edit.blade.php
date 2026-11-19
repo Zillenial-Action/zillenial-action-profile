@@ -91,6 +91,8 @@
                                 placeholder="Nomor rekening / kosongkan jika Midtrans" :value="$payment->no_rek"
                                 :required="false" />
 
+                            @include('admin.payment._service-fee', ['payment' => $payment])
+
                             {{-- Submit --}}
                             <div class="d-flex gap-2 pt-3 border-top">
                                 <button type="submit" class="btn btn-primary">

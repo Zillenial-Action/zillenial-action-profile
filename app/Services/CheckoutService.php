@@ -16,7 +16,7 @@ class CheckoutService
 {
     public function __construct(
         protected MidtransService $midtransService,
-        protected ServiceFeeSettings $serviceFee
+        protected ServiceFeeCalculator $serviceFee
     ) {}
 
     /**
@@ -101,9 +101,9 @@ class CheckoutService
                     }
                 }
 
-                // 3. Hitung total server-side: subtotal tiket (setelah voucher) + biaya layanan
+                // 3. Hitung total server-side: subtotal tiket (setelah voucher) + biaya layanan metode bayar
                 $subtotal        = max(0, ($event->harga - $discountPerTicket) * $jumlahTiket);
-                $biayaLayanan    = $this->serviceFee->calculate($subtotal, $jumlahTiket);
+                $biayaLayanan    = $this->serviceFee->calculate($payment, $subtotal, $jumlahTiket);
                 $totalPembayaran = $subtotal + $biayaLayanan['amount'];
 
                 // 4. Buat transaksi. Data pengunjung disimpan mentah — volunteer & pivot

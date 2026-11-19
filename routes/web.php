@@ -9,7 +9,6 @@ use App\Http\Controllers\FailedEmailController;
 use App\Http\Controllers\FundraiserProgramController;
 use App\Http\Controllers\ErrorLogController;
 use App\Http\Controllers\SentEmailController;
-use App\Http\Controllers\ServiceFeeController;
 use App\Http\Controllers\TicketSettingController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\UtmReportController;
@@ -129,10 +128,6 @@ Route::middleware('auth')->group(function () {
     // Pengaturan Tiket (S&K default, pesan email, kontak footer)
     Route::get('/ticket-setting', [TicketSettingController::class, 'edit'])->name('ticket-setting.edit');
     Route::put('/ticket-setting', [TicketSettingController::class, 'update'])->name('ticket-setting.update');
-
-    // Biaya layanan checkout tiket (persen / nominal per tiket)
-    Route::get('/service-fee', [ServiceFeeController::class, 'edit'])->name('service-fee.edit');
-    Route::put('/service-fee', [ServiceFeeController::class, 'update'])->name('service-fee.update');
 
     // Error Log
     Route::get('/error-log', [ErrorLogController::class, 'index'])->name('error-log.index');

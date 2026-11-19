@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Models\Volunteer;
-use App\Services\ServiceFeeSettings;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,8 +16,6 @@ class EventDetailResource extends JsonResource
             'slug'           => $this->slug,
             'image'          => $this->image ? url('/' . $this->image) : null,
             'harga'          => $this->harga,
-            // Untuk preview total di checkout; nilai final selalu dihitung ulang server-side.
-            'biaya_layanan'  => app(ServiceFeeSettings::class)->config(),
             'waktu_mulai'    => $this->waktu_mulai?->toIso8601String(),
             'waktu_berakhir' => $this->waktu_berakhir?->toIso8601String(),
             'kota'           => $this->kota,

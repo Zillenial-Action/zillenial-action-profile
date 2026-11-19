@@ -15,6 +15,8 @@ class PaymentMethodResource extends JsonResource
             'image'                  => $this->image ? url('/' . $this->image) : null,
             'type'                   => $this->type,
             'midtrans_payment_type'  => $this->midtrans_payment_type,
+            // Untuk preview total di checkout; nilai final selalu dihitung ulang server-side.
+            'biaya_layanan'          => $this->serviceFeeConfig(),
         ];
     }
 }

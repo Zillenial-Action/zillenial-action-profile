@@ -2,16 +2,24 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesServiceFee;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePaymentRequest extends FormRequest
 {
+    use ValidatesServiceFee;
+
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepareServiceFee();
     }
 
     /**
@@ -27,13 +35,14 @@ class StorePaymentRequest extends FormRequest
             'no_rek'                 => ['nullable', 'string', 'max:100'],
             'midtrans_payment_type'  => ['nullable', 'in:bank_transfer,echannel,gopay,shopeepay,qris'],
             'midtrans_bank'          => ['nullable', 'in:bca,bni,bri,permata,cimb', 'required_if:midtrans_payment_type,bank_transfer'],
+            ...$this->serviceFeeRules(),
             'image'                  => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
         ];
     }
 
     public function messages(): array
     {
-        return [
+        return $this->serviceFeeMessages() + [
             'type.required' => 'Tipe payment wajib dipilih.',
             'type.in'       => 'Tipe payment tidak valid.',
             'name.required' => 'Nama payment wajib diisi.',

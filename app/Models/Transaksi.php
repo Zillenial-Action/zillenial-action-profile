@@ -197,6 +197,21 @@ class Transaksi extends Model
     }
 
     /**
+     * Ukuran baju per peserta untuk tabel admin. Setelah Success diambil dari pivot volunteer;
+     * sebelum itu volunteer belum dibuat, jadi diambil dari pengunjung_data.
+     *
+     * @return array<int, array{name: string, ukuran: string}>
+     */
+    public function ukuranBajuPeserta(): array
+    {
+        $rows = $this->volunteers->isNotEmpty()
+            ? $this->volunteers->map(fn ($v) => ['name' => $v->name, 'ukuran' => $v->pivot?->ukuran_baju])->all()
+            : array_map(fn ($p) => ['name' => $p['name'] ?? '-', 'ukuran' => $p['ukuran_baju'] ?? null], $this->pengunjung_data ?? []);
+
+        return array_values(array_filter($rows, fn ($row) => filled($row['ukuran'])));
+    }
+
+    /**
      * Get the volunteers associated with the transaction.
      */
     public function volunteers(): BelongsToMany

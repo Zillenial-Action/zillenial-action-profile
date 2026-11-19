@@ -52,6 +52,10 @@ class Transaksi extends Model
         'id_event',
         'invoice',
         'jumlah_tiket',
+        'subtotal',
+        'biaya_layanan',
+        'biaya_layanan_tipe',
+        'biaya_layanan_nilai',
         'total_pembayaran',
         'komisi_fundraiser',
         'name',
@@ -92,6 +96,9 @@ class Transaksi extends Model
         'tanggal_register' => 'datetime',
         'tanggal_pembayaran' => 'datetime',
         'jumlah_tiket' => 'integer',
+        'subtotal' => 'integer',
+        'biaya_layanan' => 'integer',
+        'biaya_layanan_nilai' => 'float',
         'total_pembayaran' => 'integer',
         'komisi_fundraiser' => 'integer',
         'status_pembayaran' => 'string',
@@ -105,6 +112,12 @@ class Transaksi extends Model
         static::creating(function (Transaksi $transaksi): void {
             if (empty($transaksi->public_token)) {
                 $transaksi->public_token = self::generatePublicToken();
+            }
+
+            // Transaksi yang tidak lewat checkout publik (input manual admin, seeder) tidak
+            // dikenai biaya layanan: seluruh total adalah harga tiket.
+            if ($transaksi->subtotal === null) {
+                $transaksi->subtotal = max(0, (int) $transaksi->total_pembayaran - (int) $transaksi->biaya_layanan);
             }
         });
     }

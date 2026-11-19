@@ -154,6 +154,16 @@
                                         {{ $data->payment?->type === 'midtrans' ? $data->payment->name : 'Midtrans' }}
                                     </p>
                                 </div>
+                                @if ($data->biaya_layanan > 0)
+                                    <div class="d-flex justify-content-between">
+                                        <p class="mb-1 text-muted">Subtotal Tiket</p>
+                                        <p class="mb-1">@rupiah($data->subtotal)</p>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <p class="mb-1 text-muted">Biaya Layanan</p>
+                                        <p class="mb-1">@rupiah($data->biaya_layanan)</p>
+                                    </div>
+                                @endif
                                 <div class="d-flex justify-content-between">
                                     <p class="mb-1 text-muted">Total Pembayaran</p>
                                     <p class="mb-1 fw-bold" style="color: #5a2d67">@rupiah($data->total_pembayaran)</p>

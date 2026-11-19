@@ -30,7 +30,8 @@ class UtmReportController extends Controller
         $aggregates = "COUNT(*) AS transaksi,
             SUM(CASE WHEN status_pembayaran = 'Success' THEN 1 ELSE 0 END) AS sukses,
             SUM(CASE WHEN status_pembayaran = 'Success' THEN jumlah_tiket ELSE 0 END) AS tiket,
-            SUM(CASE WHEN status_pembayaran = 'Success' THEN total_pembayaran ELSE 0 END) AS pendapatan";
+            SUM(CASE WHEN status_pembayaran = 'Success' THEN subtotal ELSE 0 END) AS pendapatan,
+            SUM(CASE WHEN status_pembayaran = 'Success' THEN biaya_layanan ELSE 0 END) AS biaya_layanan";
 
         $data = (clone $base)
             ->selectRaw('utm_source, utm_medium, utm_campaign, '.$aggregates)

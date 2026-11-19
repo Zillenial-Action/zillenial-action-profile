@@ -12,6 +12,8 @@ class TransaksiStatusResource extends JsonResource
         return [
             'invoice'           => $this->invoice,
             'status_pembayaran' => $this->status_pembayaran,
+            'subtotal'          => $this->subtotal,
+            'biaya_layanan'     => $this->biaya_layanan,
             'total_pembayaran'  => $this->total_pembayaran,
             'jumlah_tiket'      => $this->jumlah_tiket,
             'payment_channel'      => $this->payment?->midtrans_payment_type,

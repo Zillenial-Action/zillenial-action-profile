@@ -157,6 +157,21 @@
                                     </p>
                                 </div>
                                 <div class="h-100 p-3 d-flex flex-column justify-content-center w-100">
+                                    <p><strong>Subtotal Tiket</strong></p>
+                                    <p>@rupiah($transaksi->subtotal)</p>
+                                </div>
+                                <div class="h-100 p-3 d-flex flex-column justify-content-center w-100">
+                                    <p><strong>Biaya Layanan</strong></p>
+                                    <p>
+                                        @rupiah($transaksi->biaya_layanan)
+                                        @if ($transaksi->biaya_layanan_tipe === 'percent')
+                                            <small class="text-muted d-block">{{ rtrim(rtrim(number_format($transaksi->biaya_layanan_nilai, 2, ',', '.'), '0'), ',') }}%</small>
+                                        @elseif ($transaksi->biaya_layanan_tipe === 'fixed')
+                                            <small class="text-muted d-block">@rupiah($transaksi->biaya_layanan_nilai) / tiket</small>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div class="h-100 p-3 d-flex flex-column justify-content-center w-100">
                                     <p><strong>Total</strong></p>
                                     <p>@rupiah($transaksi->total_pembayaran)</p>
                                 </div>

@@ -450,6 +450,7 @@
             ['url' => '/failed-email', 'label' => 'Email Tidak Terkirim', 'icon' => 'bi-envelope-exclamation', 'active' => Request::is('failed-email*')],
             ['url' => '/sent-email',   'label' => 'Email Tiket Terkirim', 'icon' => 'bi-envelope-check',       'active' => Request::is('sent-email*')],
             ['url' => '/ticket-setting', 'label' => 'Pengaturan Tiket',   'icon' => 'bi-ticket-detailed',      'active' => Request::is('ticket-setting*')],
+            ['url' => '/service-fee',  'label' => 'Biaya Layanan',        'icon' => 'bi-percent',              'active' => Request::is('service-fee*')],
             ['url' => '/error-log',    'label' => 'Error Log',            'icon' => 'bi-bug',                  'active' => Request::is('error-log*')],
         ];
     @endphp

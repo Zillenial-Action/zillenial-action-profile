@@ -29,7 +29,8 @@ class DashboardController extends Controller
                     COUNT(*) as total,
                     SUM(status_pembayaran = 'Success') as sukses,
                     SUM(status_pembayaran = 'Pending') as pending,
-                    SUM(CASE WHEN status_pembayaran = 'Success' THEN total_pembayaran ELSE 0 END) as pendapatan
+                    SUM(CASE WHEN status_pembayaran = 'Success' THEN subtotal ELSE 0 END) as pendapatan,
+                    SUM(CASE WHEN status_pembayaran = 'Success' THEN biaya_layanan ELSE 0 END) as biaya_layanan
                 ")
                 ->first();
 
@@ -39,6 +40,7 @@ class DashboardController extends Controller
                 'transaksi_sukses'  => (int) $transaksiStats->sukses,
                 'transaksi_pending' => (int) $transaksiStats->pending,
                 'pendapatan'        => (int) $transaksiStats->pendapatan,
+                'biaya_layanan'     => (int) $transaksiStats->biaya_layanan,
             ];
         });
 

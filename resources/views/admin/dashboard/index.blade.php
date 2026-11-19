@@ -15,11 +15,12 @@
                     ['label' => 'Total Event', 'value' => number_format($stats['events'] ?? 0, 0, ',', '.'), 'icon' => 'bi-calendar-event', 'tint' => '#7d297f'],
                     ['label' => 'Total Transaksi', 'value' => number_format($stats['transaksi_total'] ?? 0, 0, ',', '.'), 'icon' => 'bi-receipt', 'tint' => '#2563eb'],
                     ['label' => 'Transaksi Sukses', 'value' => number_format($stats['transaksi_sukses'] ?? 0, 0, ',', '.'), 'icon' => 'bi-check2-circle', 'tint' => '#15803d'],
-                    ['label' => 'Pendapatan', 'value' => 'Rp ' . number_format($stats['pendapatan'] ?? 0, 0, ',', '.'), 'icon' => 'bi-cash-stack', 'tint' => '#b45309'],
+                    ['label' => 'Pendapatan Tiket', 'value' => 'Rp ' . number_format($stats['pendapatan'] ?? 0, 0, ',', '.'), 'icon' => 'bi-cash-stack', 'tint' => '#b45309'],
+                    ['label' => 'Biaya Layanan', 'value' => 'Rp ' . number_format($stats['biaya_layanan'] ?? 0, 0, ',', '.'), 'icon' => 'bi-percent', 'tint' => '#0e7490'],
                 ];
             @endphp
             @foreach ($cards as $c)
-                <div class="col-6 col-xl-3">
+                <div class="col-6 col-md-4 col-xl">
                     <div class="card h-100">
                         <div class="card-body d-flex align-items-center gap-3">
                             <div style="width:48px;height:48px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;background:{{ $c['tint'] }}1a;color:{{ $c['tint'] }};">

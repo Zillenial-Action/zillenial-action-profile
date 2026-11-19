@@ -46,14 +46,7 @@ class MidtransService
                 'email' => $transaksi->email,
                 'phone' => $transaksi->telepon,
             ],
-            'item_details' => [
-                [
-                    'id'       => 'TIKET-'.$transaksi->id_event,
-                    'price'    => (int) $transaksi->total_pembayaran,
-                    'quantity' => 1,
-                    'name'     => 'Tiket '.($transaksi->event?->name ?? 'Event').' ('.$transaksi->jumlah_tiket.' tiket)',
-                ],
-            ],
+            'item_details' => $this->itemDetails($transaksi),
         ];
 
         // FRONTEND_URL kosong menghasilkan '' (bukan null), jadi default config() tidak terpakai dan
@@ -139,6 +132,36 @@ class MidtransService
         ]);
 
         return $instructions;
+    }
+
+    /**
+     * Rincian item Snap. Midtrans menolak transaksi bila jumlah price x quantity tidak sama
+     * dengan gross_amount, jadi tiket = total dikurangi biaya layanan.
+     *
+     * @return array<int, array{id: string, price: int, quantity: int, name: string}>
+     */
+    private function itemDetails(Transaksi $transaksi): array
+    {
+        $total = (int) $transaksi->total_pembayaran;
+        $fee = min(max(0, (int) $transaksi->biaya_layanan), $total);
+
+        $items = [[
+            'id'       => 'TIKET-'.$transaksi->id_event,
+            'price'    => $total - $fee,
+            'quantity' => 1,
+            'name'     => 'Tiket '.($transaksi->event?->name ?? 'Event').' ('.$transaksi->jumlah_tiket.' tiket)',
+        ]];
+
+        if ($fee > 0) {
+            $items[] = [
+                'id'       => 'BIAYA-LAYANAN',
+                'price'    => $fee,
+                'quantity' => 1,
+                'name'     => 'Biaya Layanan',
+            ];
+        }
+
+        return $items;
     }
 
     /**

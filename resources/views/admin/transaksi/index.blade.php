@@ -130,6 +130,7 @@
                                 <th>Email Pembeli</th>
                                 <th>Telepon Pembeli</th>
                                 <th>Volunteer</th>
+                                <th>Ukuran Baju</th>
                                 <th>Jumlah Tiket</th>
                                 <th>Kode Voucher</th>
                                 <th>Potongan Voucher (Pertiket)</th>
@@ -157,6 +158,13 @@
                                                 <li>{{ $volunteer->name }} - {{ $volunteer->telepon }}</li>
                                             @endforeach
                                         </ul>
+                                    </td>
+                                    <td>
+                                        @forelse ($item->ukuranBajuPeserta() as $peserta)
+                                            <div>{{ $peserta['name'] }}: <span class="fw-semibold">{{ $peserta['ukuran'] }}</span></div>
+                                        @empty
+                                            -
+                                        @endforelse
                                     </td>
                                     <td>{{ $item->jumlah_tiket }}</td>
                                     <td>{{ $item->voucher->kode ?? '-' }}</td>
@@ -230,7 +238,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="17" class="text-center text-muted py-4">Belum ada transaksi.</td>
+                                    <td colspan="18" class="text-center text-muted py-4">Belum ada transaksi.</td>
                                 </tr>
                             @endforelse
                         </tbody>

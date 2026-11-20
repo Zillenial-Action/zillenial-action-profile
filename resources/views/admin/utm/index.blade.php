@@ -53,7 +53,8 @@
                                 <th class="text-end">Berhasil</th>
                                 <th class="text-end">Konversi</th>
                                 <th class="text-end">Tiket Terjual</th>
-                                <th class="text-end">Pendapatan</th>
+                                <th class="text-end">Pendapatan Tiket</th>
+                                <th class="text-end">Biaya Layanan</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,10 +72,11 @@
                                     <td class="text-end">{{ $row->transaksi > 0 ? number_format($row->sukses / $row->transaksi * 100, 1, ',', '.') : '0' }}%</td>
                                     <td class="text-end">{{ (int) $row->tiket }}</td>
                                     <td class="text-end fw-semibold">Rp {{ number_format((int) $row->pendapatan, 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format((int) $row->biaya_layanan, 0, ',', '.') }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">Belum ada transaksi pada filter ini.</td>
+                                    <td colspan="9" class="text-center text-muted py-4">Belum ada transaksi pada filter ini.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -87,6 +89,7 @@
                                     <td class="text-end">{{ $total->transaksi > 0 ? number_format($total->sukses / $total->transaksi * 100, 1, ',', '.') : '0' }}%</td>
                                     <td class="text-end">{{ (int) $total->tiket }}</td>
                                     <td class="text-end">Rp {{ number_format((int) $total->pendapatan, 0, ',', '.') }}</td>
+                                    <td class="text-end">Rp {{ number_format((int) $total->biaya_layanan, 0, ',', '.') }}</td>
                                 </tr>
                             </tfoot>
                         @endif

@@ -14,7 +14,10 @@ use Illuminate\Support\Facades\Log;
 
 class CheckoutService
 {
-    public function __construct(protected MidtransService $midtransService) {}
+    public function __construct(
+        protected MidtransService $midtransService,
+        protected ServiceFeeCalculator $serviceFee
+    ) {}
 
     /**
      * Proses checkout: potong stok, buat transaksi, attach volunteer, redeem voucher, buat snap token.
@@ -98,8 +101,10 @@ class CheckoutService
                     }
                 }
 
-                // 3. Hitung total server-side
-                $totalPembayaran = max(0, ($event->harga - $discountPerTicket) * $jumlahTiket);
+                // 3. Hitung total server-side: subtotal tiket (setelah voucher) + biaya layanan metode bayar
+                $subtotal        = max(0, ($event->harga - $discountPerTicket) * $jumlahTiket);
+                $biayaLayanan    = $this->serviceFee->calculate($payment, $subtotal, $jumlahTiket);
+                $totalPembayaran = $subtotal + $biayaLayanan['amount'];
 
                 // 4. Buat transaksi. Data pengunjung disimpan mentah — volunteer & pivot
                 // baru dibuat oleh materializeVolunteers() saat status_pembayaran = Success,
@@ -111,6 +116,10 @@ class CheckoutService
                     'id_event'           => $event->id,
                     'invoice'            => $invoice,
                     'jumlah_tiket'       => $jumlahTiket,
+                    'subtotal'           => $subtotal,
+                    'biaya_layanan'      => $biayaLayanan['amount'],
+                    'biaya_layanan_tipe' => $biayaLayanan['tipe'],
+                    'biaya_layanan_nilai' => $biayaLayanan['nilai'],
                     'total_pembayaran'   => $totalPembayaran,
                     'komisi_fundraiser'  => $komisiFundraiser,
                     'name'            => $utamaData['name'],
@@ -168,6 +177,7 @@ class CheckoutService
             'invoice'         => $transaksi->invoice,
             'event_id'        => $event->id,
             'total'           => $transaksi->total_pembayaran,
+            'biaya_layanan'   => $transaksi->biaya_layanan,
             'ticket_count'    => $jumlahTiket,
             'voucher_applied' => $transaksi->id_voucher !== null,
             'payment_type'    => $payment->type,

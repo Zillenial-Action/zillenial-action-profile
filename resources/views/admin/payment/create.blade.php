@@ -86,6 +86,8 @@
                             <x-form-input name="no_rek" label="Nomor Rekening" placeholder="Nomor rekening / kosongkan jika Midtrans"
                                 :required="false" />
 
+                            @include('admin.payment._service-fee', ['payment' => null])
+
                             {{-- Submit --}}
                             <div class="d-flex gap-2 pt-3 border-top">
                                 <button type="submit" class="btn btn-primary">

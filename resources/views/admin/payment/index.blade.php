@@ -46,6 +46,7 @@
                                 <th>ID</th>
                                 <th>Nama</th>
                                 <th>Rekening</th>
+                                <th>Biaya Layanan</th>
                                 <th class="text-end">Aksi</th>
                             </tr>
                         </thead>
@@ -60,6 +61,7 @@
                                     <td>{{ $item->id }}</td>
                                     <td class="fw-semibold">{{ $item->name }}</td>
                                     <td>{{ $item->no_rek }}</td>
+                                    <td>{{ $item->serviceFeeLabel() }}</td>
                                     <td class="text-end">
                                         <div class="d-inline-flex gap-1">
                                             <a href="{{ route('payment.edit', $item->id) }}"
@@ -79,7 +81,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">Belum ada metode pembayaran.</td>
+                                    <td colspan="7" class="text-center text-muted py-4">Belum ada metode pembayaran.</td>
                                 </tr>
                             @endforelse
                         </tbody>

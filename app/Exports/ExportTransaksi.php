@@ -60,6 +60,9 @@ class ExportTransaksi implements FromQuery, ShouldAutoSize, WithColumnFormatting
             'UTM Source',
             'UTM Medium',
             'UTM Campaign',
+            // Ditaruh di akhir supaya posisi kolom lama tidak bergeser.
+            'Subtotal Tiket',
+            'Biaya Layanan',
         ];
     }
 
@@ -83,6 +86,8 @@ class ExportTransaksi implements FromQuery, ShouldAutoSize, WithColumnFormatting
             $row->utm_source,
             $row->utm_medium,
             $row->utm_campaign,
+            $row->subtotal,
+            $row->biaya_layanan,
         ];
     }
 
@@ -93,6 +98,8 @@ class ExportTransaksi implements FromQuery, ShouldAutoSize, WithColumnFormatting
             'J' => self::FORMAT_RUPIAH,
             'K' => self::FORMAT_TANGGAL,
             'M' => self::FORMAT_TANGGAL,
+            'R' => self::FORMAT_RUPIAH,
+            'S' => self::FORMAT_RUPIAH,
         ];
     }
 

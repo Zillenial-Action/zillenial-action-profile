@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use App\Models\Volunteer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,7 +31,7 @@ class EventDetailResource extends JsonResource
             'sisa_tiket'     => $this->remainingTickets(),
             'is_sold_out'    => $this->isSoldOut(),
             'ada_baju'       => (bool) $this->ada_baju,
-            'ukuran_baju'    => $this->ada_baju ? Volunteer::UKURAN_BAJU : [],
+            'ukuran_baju'    => $this->shirtSizes(),
         ];
     }
 }

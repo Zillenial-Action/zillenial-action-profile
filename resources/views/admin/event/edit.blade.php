@@ -110,15 +110,7 @@
                             </div>
 
                             {{-- Baju --}}
-                            <div class="mb-3">
-                                <input type="hidden" name="ada_baju" value="0">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" role="switch" id="ada_baju"
-                                        name="ada_baju" value="1" @checked(old('ada_baju', $event->ada_baju))>
-                                    <label class="form-check-label fw-semibold" for="ada_baju">Event ini menyediakan baju</label>
-                                </div>
-                                <small class="text-muted">Jika aktif, volunteer wajib memilih ukuran baju (XXS&ndash;XL) saat checkout.</small>
-                            </div>
+                            @include('admin.event.partials.shirt-size-fields', ['event' => $event])
 
                             {{-- Description --}}
                             <div class="mb-3">

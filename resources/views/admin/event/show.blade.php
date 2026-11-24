@@ -85,6 +85,7 @@
                                 Baju untuk volunteer :
                                 @if ($event->ada_baju)
                                     <span class="badge bg-success">Ada</span>
+                                    <div class="small text-muted mt-1">Ukuran: {{ implode(', ', $event->shirtSizes()) }}</div>
                                 @else
                                     <span class="badge bg-secondary">Tidak ada</span>
                                 @endif

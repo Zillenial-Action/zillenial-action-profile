@@ -28,6 +28,7 @@ use Illuminate\Support\Str;
  * @property array<int, string>|null $benefits
  * @property array<int, array<string, string>>|null $agenda
  * @property bool $ada_baju
+ * @property array<int, string>|null $ukuran_baju
  * @property bool $status
  * @property \Carbon\Carbon $waktu_mulai
  * @property \Carbon\Carbon $waktu_berakhir
@@ -49,6 +50,16 @@ class Event extends Model
     use HasFactory, SoftDeletes;
 
     /**
+     * Ukuran baju yang tampil sebagai checklist di form admin; admin bisa menambah ukuran lain.
+     */
+    public const UKURAN_BAJU_PRESET = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL'];
+
+    /**
+     * Ukuran yang dicentang untuk event baru, sekaligus fallback event lama yang belum punya daftar.
+     */
+    public const UKURAN_BAJU_DEFAULT = ['XXS', 'XS', 'S', 'M', 'L', 'XL'];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -67,6 +78,7 @@ class Event extends Model
         'benefits',
         'agenda',
         'ada_baju',
+        'ukuran_baju',
         'status',
         'waktu_mulai',
         'waktu_berakhir',
@@ -102,6 +114,7 @@ class Event extends Model
         'benefits' => 'array',
         'agenda' => 'array',
         'ada_baju' => 'boolean',
+        'ukuran_baju' => 'array',
     ];
 
     /**
@@ -210,6 +223,20 @@ class Event extends Model
     public function isSoldOut(): bool
     {
         return ! $this->isActive() || $this->remainingTickets() <= 0;
+    }
+
+    /**
+     * Ukuran baju yang bisa dipilih volunteer saat checkout; kosong bila event tidak menyediakan baju.
+     *
+     * @return array<int, string>
+     */
+    public function shirtSizes(): array
+    {
+        if (! $this->ada_baju) {
+            return [];
+        }
+
+        return array_values($this->ukuran_baju ?: self::UKURAN_BAJU_DEFAULT);
     }
 
     /**

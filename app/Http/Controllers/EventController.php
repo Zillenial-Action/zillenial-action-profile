@@ -371,6 +371,7 @@ class EventController extends Controller
 
         // Checkbox yang tidak dicentang tidak terkirim, jadi default-nya false.
         $data['ada_baju'] = (bool) ($data['ada_baju'] ?? false);
+        $data['ukuran_baju'] = $data['ada_baju'] ? ($data['ukuran_baju'] ?? null) : null;
 
         $data['direction'] = isset($data['direction']) && trim((string) $data['direction']) !== ''
             ? trim((string) $data['direction'])

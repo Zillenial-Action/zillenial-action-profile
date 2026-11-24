@@ -37,14 +37,33 @@ class CheckoutVolunteerDetailsTest extends TestCase
         });
     }
 
-    private function event(bool $adaBaju): Event
+    private function event(bool $adaBaju, ?array $ukuranBaju = null): Event
     {
         return Event::factory()->create([
             'slug' => 'social-trip',
             'status' => true,
             'jumlah_tiket' => 10,
             'ada_baju' => $adaBaju,
+            'ukuran_baju' => $ukuranBaju,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function eventFormPayload(Event $event): array
+    {
+        return [
+            'name' => $event->name,
+            'mitra' => 'Zillenial Action',
+            'waktu_mulai' => now()->addWeek()->format('Y-m-d H:i:s'),
+            'waktu_berakhir' => now()->addWeek()->addHours(3)->format('Y-m-d H:i:s'),
+            'nama_tempat' => 'Bandung',
+            'alamat' => 'Jl. Asia Afrika',
+            'kota' => 'Bandung',
+            'jumlah_tiket' => 20,
+            'harga' => 150000,
+        ];
     }
 
     private function checkout(array $attendee): \Illuminate\Testing\TestResponse
@@ -136,23 +155,67 @@ class CheckoutVolunteerDetailsTest extends TestCase
         $this->actingAs(User::factory()->create());
         $event = $this->event(false);
 
-        $payload = [
-            'name' => $event->name,
-            'mitra' => 'Zillenial Action',
-            'waktu_mulai' => now()->addWeek()->format('Y-m-d H:i:s'),
-            'waktu_berakhir' => now()->addWeek()->addHours(3)->format('Y-m-d H:i:s'),
-            'nama_tempat' => 'Bandung',
-            'alamat' => 'Jl. Asia Afrika',
-            'kota' => 'Bandung',
-            'jumlah_tiket' => 20,
-            'harga' => 150000,
-        ];
+        $payload = $this->eventFormPayload($event);
 
-        $this->put(route('event.update', $event), $payload + ['ada_baju' => '1'])->assertRedirect();
+        $this->put(route('event.update', $event), $payload + ['ada_baju' => '1', 'ukuran_baju' => ['M']])->assertRedirect();
         $this->assertTrue($event->fresh()->ada_baju);
 
         // Checkbox tidak dicentang: hanya hidden input "0" yang terkirim (atau tidak ada sama sekali).
         $this->put(route('event.update', $event->fresh()), $payload)->assertRedirect();
+        $this->assertFalse($event->fresh()->ada_baju);
+        $this->assertNull($event->fresh()->ukuran_baju);
+    }
+
+    public function test_event_detail_api_exposes_event_specific_sizes(): void
+    {
+        $this->event(true, ['M', 'L', '5XL']);
+
+        $this->getJson('/api/events/social-trip')
+            ->assertOk()
+            ->assertJsonPath('data.ukuran_baju', ['M', 'L', '5XL']);
+    }
+
+    public function test_checkout_only_accepts_sizes_offered_by_the_event(): void
+    {
+        $this->event(true, ['M', 'L', 'Anak-M']);
+
+        $this->checkout(['domisili' => 'Bandung', 'ukuran_baju' => 'XS'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('pengunjung.0.ukuran_baju');
+
+        $response = $this->checkout(['domisili' => 'Bandung', 'ukuran_baju' => 'Anak-M'])->assertOk();
+
+        $transaksi = Transaksi::where('invoice', $response->json('order_id'))->firstOrFail();
+        $this->assertSame('Anak-M', $transaksi->pengunjung_data[0]['ukuran_baju']);
+    }
+
+    public function test_admin_sets_sizes_from_checklist_and_custom_input(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $event = $this->event(false);
+
+        $this->put(route('event.update', $event), $this->eventFormPayload($event) + [
+            'ada_baju' => '1',
+            'ukuran_baju' => ['M', '5XL', 'S'],
+            'ukuran_baju_lain' => 'Anak-M, s , 5xl,, 6XL',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame(['S', 'M', '5XL', 'Anak-M', '6XL'], $event->fresh()->ukuran_baju);
+    }
+
+    public function test_admin_must_pick_at_least_one_size_for_shirt_event(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $event = $this->event(false);
+
+        $this->put(route('event.update', $event), $this->eventFormPayload($event) + ['ada_baju' => '1'])
+            ->assertSessionHasErrors('ukuran_baju');
+
+        $this->put(route('event.update', $event), $this->eventFormPayload($event) + [
+            'ada_baju' => '1',
+            'ukuran_baju_lain' => 'UkuranSangatPanjang',
+        ])->assertSessionHasErrors('ukuran_baju.0');
+
         $this->assertFalse($event->fresh()->ada_baju);
     }
 }

@@ -27,11 +27,6 @@ class Volunteer extends Model
     use HasFactory, SoftDeletes;
 
     /**
-     * Pilihan ukuran baju untuk event yang menyediakan baju (events.ada_baju).
-     */
-    public const UKURAN_BAJU = ['XXS', 'XS', 'S', 'M', 'L', 'XL'];
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>

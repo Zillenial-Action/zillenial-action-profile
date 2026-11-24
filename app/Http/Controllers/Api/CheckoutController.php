@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Payment;
-use App\Models\Volunteer;
 use App\Services\CheckoutService;
 use App\Support\UtmData;
 use Illuminate\Http\JsonResponse;
@@ -20,8 +19,11 @@ class CheckoutController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        // Ukuran baju hanya diminta untuk event yang menyediakan baju.
-        $adaBaju = (bool) Event::where('slug', (string) $request->input('event_slug'))->value('ada_baju');
+        // Ukuran baju hanya diminta untuk event yang menyediakan baju, dan harus salah satu ukuran event itu.
+        $ukuranBaju = Event::where('slug', (string) $request->input('event_slug'))
+            ->first(['id', 'ada_baju', 'ukuran_baju'])
+            ?->shirtSizes() ?? [];
+        $adaBaju = $ukuranBaju !== [];
 
         $data = $request->validate([
             'event_slug'           => 'required|string|exists:events,slug',
@@ -37,7 +39,7 @@ class CheckoutController extends Controller
             'pengunjung.*.jenis_kelamin' => ['nullable', 'string', 'in:Laki-laki,Perempuan'],
             'pengunjung.*.domisili' => ['required', 'string', 'min:2', 'max:100'],
             'pengunjung.*.ukuran_baju' => $adaBaju
-                ? ['required', 'string', Rule::in(Volunteer::UKURAN_BAJU)]
+                ? ['required', 'string', Rule::in($ukuranBaju)]
                 : ['nullable'],
         ], [
             'pengunjung.*.name.required'    => 'Nama wajib diisi.',

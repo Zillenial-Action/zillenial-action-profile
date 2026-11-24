@@ -2,16 +2,24 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesUkuranBaju;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateEventRequest extends FormRequest
 {
+    use ValidatesUkuranBaju;
+
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepareUkuranBaju();
     }
 
     /**
@@ -48,6 +56,7 @@ class UpdateEventRequest extends FormRequest
             'agenda.*.title' => 'nullable|string|max:150',
             'agenda.*.description' => 'nullable|string|max:500',
             'ada_baju' => 'nullable|boolean',
+            ...$this->ukuranBajuRules(),
         ];
     }
 
@@ -58,6 +67,7 @@ class UpdateEventRequest extends FormRequest
     {
         return [
             'kontak_whatsapp_tiket.regex' => 'Nomor WhatsApp hanya boleh berisi angka (boleh diawali +).',
+            ...$this->ukuranBajuMessages(),
         ];
     }
 }

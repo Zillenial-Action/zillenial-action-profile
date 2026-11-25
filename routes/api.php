@@ -29,6 +29,10 @@ Route::post('/checkout', [Api\CheckoutController::class, 'store'])
 Route::get('/transaksi/{invoice}', [Api\TransaksiController::class, 'show'])
     ->middleware('throttle:transaction-status');
 
+// Event halaman Sostrip untuk Meta Conversions API (pasangan server dari pixel browser).
+Route::post('/meta/events', [Api\MetaEventController::class, 'store'])
+    ->middleware('throttle:meta-events');
+
 // Customer portal Sostrip: Bearer token (guard "customer"), terpisah dari session admin.
 Route::prefix('auth')->group(function () {
     Route::post('/register', [Api\CustomerAuthController::class, 'register'])

@@ -31,7 +31,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  */
 class TransaksiController extends Controller
 {
-    public function __construct(protected \App\Services\CheckoutService $checkoutService) {}
+    public function __construct(
+        protected \App\Services\CheckoutService $checkoutService,
+        protected \App\Services\MetaConversionsService $meta
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -421,6 +424,9 @@ class TransaksiController extends Controller
             if (! $processed) {
                 return response()->json(['message' => 'Transaksi sudah berstatus Success sebelumnya.'], 409);
             }
+
+            // Pasangan server dari event Purchase pixel (event_id sama dengan halaman sukses).
+            $this->meta->purchase($transaksi->fresh());
 
             $sentEmails  = [];
             $failedEmails = [];

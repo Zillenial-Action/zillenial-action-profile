@@ -196,6 +196,8 @@ class CustomerAuthController extends Controller
             'message' => 'Berhasil masuk.',
             'token' => $this->issueToken($customer),
             'data' => $this->customerPayload($customer),
+            // Akun yang baru saja dibuat lewat Google: frontend mengirim event CompleteRegistration.
+            'registered' => (bool) $customer->created_at?->gt(now()->subMinutes(5)),
         ]);
     }
 

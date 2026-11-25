@@ -144,7 +144,8 @@ if [ "${QUEUE_CONNECTION:-database}" != "sync" ]; then
     (
         while true; do
             # Jalan sebagai www-data (sama dengan PHP-FPM) agar file di storage/ tetap bisa ditulis web.
-            su www-data -s /bin/sh -c "/usr/local/bin/php artisan queue:work --queue=default --sleep=3 --tries=5 --max-time=3600 --backoff=60" 2>&1
+            # "default" lebih dulu: email tiket selalu diproses sebelum event Meta (antrean "meta").
+            su www-data -s /bin/sh -c "/usr/local/bin/php artisan queue:work --queue=default,${META_QUEUE:-meta} --sleep=3 --tries=5 --max-time=3600 --backoff=60" 2>&1
             echo "[entrypoint] queue worker exited, restarting in 3s..."
             sleep 3
         done

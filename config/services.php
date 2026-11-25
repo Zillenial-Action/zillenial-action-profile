@@ -47,6 +47,18 @@ return [
         'token_ttl_days' => (int) env('CUSTOMER_TOKEN_TTL_DAYS', 30),
     ],
 
+    'meta' => [
+        // Conversions API: event dikirim server-ke-server. Kosongkan pixel_id atau
+        // access_token untuk menonaktifkan seluruh pengiriman.
+        'pixel_id' => env('META_PIXEL_ID'),
+        'access_token' => env('META_CAPI_ACCESS_TOKEN'),
+        'graph_version' => env('META_GRAPH_VERSION', 'v26.0'),
+        // Antrean khusus event Meta. Worker: queue:work --queue=default,meta
+        'queue' => env('META_QUEUE', 'meta'),
+        // Hanya diisi saat uji di Events Manager > Test Events.
+        'test_event_code' => env('META_CAPI_TEST_EVENT_CODE'),
+    ],
+
     'chatkebaikan' => [
         'base_url' => env('CHATKEBAIKAN_BASE_URL', 'https://chatkebaikan.raihmimpi.id'),
         'validate_path' => env('CHATKEBAIKAN_VALIDATE_PATH', '/api/dr/voucher/validate/{kode}'),

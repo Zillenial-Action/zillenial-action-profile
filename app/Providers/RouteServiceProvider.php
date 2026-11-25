@@ -72,6 +72,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        // PageView + ViewContent terkirim di tiap halaman; batas longgar untuk IP bersama (wifi kampus/kantor).
+        RateLimiter::for('meta-events', function (Request $request) {
+            return Limit::perMinute(120)->by($request->ip());
+        });
+
         RateLimiter::for('fundraiser-generate', function (Request $request) {
             return Limit::perMinute(10)->by($request->user('customer')?->id ?: $request->ip());
         });

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Payment;
 use App\Services\CheckoutService;
+use App\Services\MetaConversionsService;
 use App\Support\UtmData;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,10 @@ use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
-    public function __construct(protected CheckoutService $checkoutService) {}
+    public function __construct(
+        protected CheckoutService $checkoutService,
+        protected MetaConversionsService $meta
+    ) {}
 
     public function store(Request $request): JsonResponse
     {
@@ -88,8 +92,11 @@ class CheckoutController extends Controller
                 $data['voucher_code'] ?? null,
                 // Opsional: guest checkout tetap jalan tanpa token customer.
                 $request->user('customer')?->id,
-                UtmData::toAttributes($request->input('utm'))
+                UtmData::toAttributes($request->input('utm')) + $this->meta->trackingAttributes($request)
             );
+
+            // Pasangan server dari InitiateCheckout di halaman bayar Sostrip (event_id sama).
+            $this->meta->initiateCheckout($transaksi);
 
             return response()->json([
                 'success'              => true,

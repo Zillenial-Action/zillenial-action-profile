@@ -59,7 +59,16 @@ class ExpirePendingTransaksi extends Command
                         }
 
                         $checkoutService->releaseReservation($fresh);
-                        $fresh->update(['status_pembayaran' => 'Failed']);
+
+                        // IP & user agent hanya disimpan untuk event Purchase; transaksi yang
+                        // kedaluwarsa tidak membutuhkannya lagi.
+                        $tracking = is_array($fresh->meta_tracking) ? $fresh->meta_tracking : [];
+                        unset($tracking['ip'], $tracking['user_agent']);
+
+                        $fresh->update([
+                            'status_pembayaran' => 'Failed',
+                            'meta_tracking' => $tracking === [] ? null : $tracking,
+                        ]);
                         $count++;
                     });
                 }

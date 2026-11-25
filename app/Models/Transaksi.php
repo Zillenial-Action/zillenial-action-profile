@@ -71,6 +71,8 @@ class Transaksi extends Model
         'utm_medium',
         'utm_campaign',
         'utm_data',
+        'meta_tracking',
+        'meta_purchase_sent_at',
         'public_token',
         'snap_token',
         'payment_instructions',
@@ -85,6 +87,8 @@ class Transaksi extends Model
     protected $hidden = [
         'deleted_at',
         'public_token',
+        'meta_tracking',
+        'meta_purchase_sent_at',
     ];
 
     /**
@@ -105,6 +109,8 @@ class Transaksi extends Model
         'payment_instructions' => 'array',
         'pengunjung_data' => 'array',
         'utm_data' => 'array',
+        'meta_tracking' => 'array',
+        'meta_purchase_sent_at' => 'datetime',
     ];
 
     protected static function booted(): void

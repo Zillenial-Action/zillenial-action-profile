@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\SendTicket;
 use App\Models\Transaksi;
 use App\Services\CheckoutService;
+use App\Services\MetaConversionsService;
 use App\Services\MidtransService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,10 +24,13 @@ class MidtransController extends Controller
 
     protected CheckoutService $checkoutService;
 
-    public function __construct(MidtransService $midtransService, CheckoutService $checkoutService)
+    protected MetaConversionsService $meta;
+
+    public function __construct(MidtransService $midtransService, CheckoutService $checkoutService, MetaConversionsService $meta)
     {
         $this->midtransService = $midtransService;
         $this->checkoutService = $checkoutService;
+        $this->meta = $meta;
     }
 
     /**
@@ -149,6 +153,10 @@ class MidtransController extends Controller
                 // dan tidak boleh dibatalkan hanya karena email gagal terkirim.
                 $processed->load(['volunteers', 'event']);
                 $this->dispatchTickets($processed);
+
+                // Purchase ke Meta dikirim dari sini, bukan dari halaman sukses: pembeli VA/QRIS
+                // sering tidak kembali ke situs setelah membayar.
+                $this->meta->purchase($processed);
 
                 Log::info('Midtrans: transaksi berhasil', ['invoice' => $invoice]);
 
